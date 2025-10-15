@@ -2,7 +2,7 @@ import React from 'react'
 
 const GamePlay = () => {
   return (
-    <div>GamePlay</div>
+    <div className='text-center justify-center h-screen mt-10'>GamePlay</div>
   )
 }
 

@@ -2,7 +2,7 @@ import React from 'react'
 
 const Results = () => {
   return (
-    <div>Results</div>
+    <div className='cursor-pointer'>Results</div>
   )
 }
 
