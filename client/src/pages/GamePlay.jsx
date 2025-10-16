@@ -2,7 +2,7 @@ import React from 'react'
 
 const GamePlay = () => {
   return (
-    <div className='text-center justify-center h-screen mt-10'>GamePlay</div>
+    <div className='flex flex-col items-center justify-center h-screen text-3xl'>GamePlay</div>
   )
 }
 
