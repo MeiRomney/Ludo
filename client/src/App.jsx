@@ -4,7 +4,8 @@ import HomePage from './pages/HomePage'
 import GamePlay from './pages/GamePlay'
 import Results from './pages/Results'
 import HowToPlayModal from './components/HowToPlayModal'
-import Setting from './components/Setting'
+import SettingModal from './components/SettingModal'
+import GamePlayModal from './components/GameplayModal'
 
 const App = () => {
   return (
@@ -12,8 +13,10 @@ const App = () => {
       <Routes>
         <Route path='/' element={<HomePage />}>
           <Route path='how-to-play' element={<HowToPlayModal />}/>
-          <Route path='setting' element={<Setting />}/>
+          <Route path='setting' element={<SettingModal />}/>
+          <Route path='gameplay-modal' element={<GamePlayModal />}/>
         </Route>
+        
         <Route path='/gameplay' element={<GamePlay />} />
         <Route path='/results' element={<Results />} />
       </Routes>
