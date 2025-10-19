@@ -1,6 +1,7 @@
 import React from 'react'
 import { Home, Pause, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import PlayerCard from '../components/PlayerCard';
 
 const GamePlay = () => {
 
@@ -48,8 +49,36 @@ const GamePlay = () => {
           <div className="flex-1 flex gap-6 p-6">
             {/* Left sidebar - Player status */}
             <div className="w-64 flex flex-col gap-4">
-              {/* <PlayerCard color={players[0].color} name={players[0].name} pieces={players[0].pieces} active={true} /> */}
-              {/* <PlayerCard color={players[1].color} name={players[1].name} pieces={players[1].pieces} active={false} /> */}
+              <PlayerCard color={players[0].color} name={players[0].name} pieces={players[0].pieces} active={true} />
+              <div className="mt-auto bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-4">
+                <div className="text-gray-600">Your Turn</div>
+                <div className="w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-2 p-2">
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                  </div>
+                </div>
+                <button className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
+                  Roll Dice
+                </button>
+              </div>
+              <PlayerCard color={players[1].color} name={players[1].name} pieces={players[1].pieces} active={false} />
+              <div className="mt-auto bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-4">
+                <div className="text-gray-600">Your Turn</div>
+                <div className="w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-2 p-2">
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                  </div>
+                </div>
+                <button className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
+                  Roll Dice
+                </button>
+              </div>
             </div>
             
             {/* Center - Game board */}
@@ -145,8 +174,22 @@ const GamePlay = () => {
             
             {/* Right sidebar */}
             <div className="w-64 flex flex-col gap-4">
-              {/* <PlayerCard color={players[2].color} name={players[2].name} pieces={players[2].pieces} active={false} /> */}
-              {/* <PlayerCard color={players[3].color} name={players[3].name} pieces={players[3].pieces} active={false} /> */}
+              <PlayerCard color={players[2].color} name={players[2].name} pieces={players[2].pieces} active={false} />
+              <div className="mt-auto bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-4">
+                <div className="text-gray-600">Your Turn</div>
+                <div className="w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-2 p-2">
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                  </div>
+                </div>
+                <button className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
+                  Roll Dice
+                </button>
+              </div>
+              <PlayerCard color={players[3].color} name={players[3].name} pieces={players[3].pieces} active={false} />
               
               {/* Dice section */}
               <div className="mt-auto bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-4">
@@ -159,7 +202,7 @@ const GamePlay = () => {
                     <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
                   </div>
                 </div>
-                <button className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105">
+                <button className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
                   Roll Dice
                 </button>
               </div>
