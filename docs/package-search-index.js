@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.ludo.server"},{"l":"com.ludo.server.controller"},{"l":"com.ludo.server.model"},{"l":"com.ludo.server.service"}];updateSearchResults();

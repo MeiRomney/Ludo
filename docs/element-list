@@ -1,0 +1,4 @@
+com.ludo.server
+com.ludo.server.controller
+com.ludo.server.model
+com.ludo.server.service
