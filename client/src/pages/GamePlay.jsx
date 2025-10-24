@@ -15,9 +15,9 @@ const GamePlay = () => {
 
   const players = [
     { color: '#FF4C4C', name: 'Red', pieces: [1, 2, 3, 0] },
+    { color: '#28A745', name: 'Green', pieces: [3, 0, 1, 0] },
     { color: '#4C6FFF', name: 'Blue', pieces: [2, 1, 1, 0] },
     { color: '#FFD93D', name: 'Yellow', pieces: [0, 3, 1, 0] },
-    { color: '#28A745', name: 'Green', pieces: [3, 0, 1, 0] },
   ];
 
   return (
