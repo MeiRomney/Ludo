@@ -46,15 +46,44 @@ const GameBoard = () => {
         return "bg-white";
     }
 
+    const getPieceOffset = (index, total) => {
+        const offsetAmount = 4;
+        const positions = [
+            [-offsetAmount, -offsetAmount],
+            [offsetAmount, -offsetAmount],
+            [-offsetAmount, offsetAmount],
+            [offsetAmount, offsetAmount],
+        ];
+        return positions[index % positions.length];
+    }
+
     const renderPieces = (row, col) => {
-        if(match(redPieces, row, col))
-            return <div className='w-6 h-6 bg-red-500 rounded-full border-2 border-white relative z-10'></div>;
-        if(match(bluePieces, row, col))
-            return <div className='w-6 h-6 bg-blue-500 rounded-full border-2 border-white relative z-10'></div>;
-        if(match(greenPieces, row, col))
-            return <div className='w-6 h-6 bg-green-500 rounded-full border-2 border-white relative z-10'></div>;
-        if(match(yellowPieces, row, col))
-            return <div className='w-6 h-6 bg-yellow-500 rounded-full border-2 border-white relative z-10'></div>;
+        const allPieces = [
+            ...redPieces.map((pos) => ({ color: "bg-red-500", pos })),
+            ...bluePieces.map((pos) => ({ color: "bg-blue-500", pos })),
+            ...greenPieces.map((pos) => ({ color: "bg-green-500", pos })),
+            ...yellowPieces.map((pos) => ({ color: "bg-yellow-500", pos })),
+        ]
+
+        // Find all pieces in this cell
+        const piecesHere = allPieces.filter(
+            (p) => p.pos[0] === row && p.pos[1] === col
+        );
+
+        return piecesHere.map((piece, i) => {
+            const [x, y] = getPieceOffset(i, piecesHere.length);
+            return (
+                <div
+                key={i}
+                className={`w-6 h-6 ${piece.color} rounded-full border-2 border-white z-10`}
+                style={{
+                    position: 'absolute',
+                    top: '25%',
+                    left: '25%',
+                    transform: `translate(${x}px, ${y}px)`
+                }}></div>
+            )
+        })
     }
 
   return (
@@ -73,7 +102,7 @@ const GameBoard = () => {
                 return (
                     <div
                     key={i}
-                    className={`border border-gray-300 flex items-center justify-center ${bgColor}`}>
+                    className={`border border-gray-300 flex items-center justify-center relative ${bgColor}`}>
                         {isStar && <span className='text-gray-300 text-sm z-0 absolute'><Star/></span>}
                         {arrow && (
                             <div
