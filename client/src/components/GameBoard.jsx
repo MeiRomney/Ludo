@@ -1,43 +1,12 @@
-import { ArrowUp, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import React from 'react'
 
 const GameBoard = () => {
 
-    const blueSafeZone = [
-            [1, 7],
-            [2, 7],
-            [3, 7],
-            [4, 7],
-            [5, 7],
-            [1, 8],
-        ];
-
-    const redSafeZone = [
-            [7, 1],
-            [7, 2],
-            [7, 3],
-            [7, 4],
-            [7, 5],
-            [6, 1],
-        ];
-
-    const yellowSafeZone = [
-            [7, 9],
-            [7, 10],
-            [7, 11],
-            [7, 12],
-            [7, 13],
-            [8, 13],
-        ];
-
-    const greenSafeZone = [
-            [9, 7],
-            [10, 7],
-            [11, 7],
-            [12, 7],
-            [13, 7],
-            [13, 6],
-        ];
+    const blueSafeZone = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [1, 8],];
+    const redSafeZone = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [6, 1],];
+    const yellowSafeZone = [[7, 9], [7, 10], [7, 11], [7, 12], [7, 13], [8, 13],];
+    const greenSafeZone = [[9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [13, 6],];
 
     // Safe/star zones
     const starZones = [
@@ -60,6 +29,12 @@ const GameBoard = () => {
     const greenHome = { rowStart: 9, colStart: 0, color: "bg-green-200", border: "border-green-400" };
     const yellowHome = { rowStart: 9, colStart: 9, color: "bg-yellow-200", border: "border-yellow-400" };
 
+    // Pieces starting position
+    const redPieces = [[2,2], [2,3], [3,2], [3,3]];
+    const bluePieces = [[2,11], [2,12], [3,11], [3,12]];
+    const greenPieces = [[11,2], [11,3], [12,2], [12,3]];
+    const yellowPieces = [[11,11], [11,12], [12,11], [12,12]];
+
     // helper function
     const match = (arr, row, col) => arr.some(([r, c]) => r === row && c === col);
 
@@ -69,6 +44,17 @@ const GameBoard = () => {
         if(match(redSafeZone, row, col)) return "bg-red-500";
         if(match(yellowSafeZone, row, col)) return "bg-yellow-500";
         return "bg-white";
+    }
+
+    const renderPieces = (row, col) => {
+        if(match(redPieces, row, col))
+            return <div className='w-6 h-6 bg-red-500 rounded-full border-2 border-white relative z-10'></div>;
+        if(match(bluePieces, row, col))
+            return <div className='w-6 h-6 bg-blue-500 rounded-full border-2 border-white relative z-10'></div>;
+        if(match(greenPieces, row, col))
+            return <div className='w-6 h-6 bg-green-500 rounded-full border-2 border-white relative z-10'></div>;
+        if(match(yellowPieces, row, col))
+            return <div className='w-6 h-6 bg-yellow-500 rounded-full border-2 border-white relative z-10'></div>;
     }
 
   return (
@@ -81,17 +67,17 @@ const GameBoard = () => {
 
                 const isStar = match(starZones, row, col);
                 const arrow = arrows.find((a)=> a.row === row && a.col === col);
-
                 const bgColor = getCellColor(row, col);
+                const pieces = renderPieces(row, col);
 
                 return (
                     <div
                     key={i}
                     className={`border border-gray-300 flex items-center justify-center ${bgColor}`}>
-                        {isStar && <span className='text-gray-300 text-sm'><Star/></span>}
+                        {isStar && <span className='text-gray-300 text-sm z-0 absolute'><Star/></span>}
                         {arrow && (
                             <div
-                                className={`w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] ${arrow.rotation}`}
+                                className={`w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] ${arrow.rotation} z-0 absolute`}
                                 style={{
                                     borderLeftColor: 'transparent',
                                     borderRightColor: 'transparent',
@@ -100,6 +86,7 @@ const GameBoard = () => {
                                 }}
                             ></div>
                         )}
+                        {pieces}
                     </div>
                 );
             })}
@@ -109,10 +96,9 @@ const GameBoard = () => {
                 className={`absolute top-0 left-0 w-[40%] h-[40%] ${redHome.color} ${redHome.border} border-4 rounded-tl-2xl flex items-center justify-center`}
             >
                 <div className='grid grid-cols-2 gap-3'>
-                    <div className='w-6 h-6 bg-white rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-red-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-red-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-red-500 rounded-full shadow-md border-2 border-white'></div>
+                    {[...Array(4)].map((_, i)=> (
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                    ))}
                 </div>
             </div>
 
@@ -121,10 +107,9 @@ const GameBoard = () => {
                 className={`absolute top-0 right-0 w-[40%] h-[40%] ${blueHome.color} ${blueHome.border} border-4 rounded-tr-2xl flex items-center justify-center`}
             >
                 <div className='grid grid-cols-2 gap-3'>
-                    <div className='w-6 h-6 bg-blue-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-white rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-white rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-blue-500 rounded-full shadow-md border-2 border-white'></div>
+                    {[...Array(4)].map((_, i)=> (
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                    ))}
                 </div>
             </div>
 
@@ -133,10 +118,9 @@ const GameBoard = () => {
                 className={`absolute bottom-0 left-0 w-[40%] h-[40%] ${greenHome.color} ${greenHome.border} border-4 rounded-bl-2xl flex items-center justify-center`}
             >
                 <div className='grid grid-cols-2 gap-3'>
-                    <div className='w-6 h-6 bg-green-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-green-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-green-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-green-500 rounded-full shadow-md border-2 border-white'></div>
+                    {[...Array(4)].map((_, i)=> (
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                    ))}
                 </div>
             </div>
             
@@ -145,10 +129,9 @@ const GameBoard = () => {
                 className={`absolute bottom-0 right-0 w-[40%] h-[40%] ${yellowHome.color} ${yellowHome.border} border-4 rounded-br-2xl flex items-center justify-center`}
             >
                 <div className='grid grid-cols-2 gap-3'>
-                    <div className='w-6 h-6 bg-yellow-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-yellow-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-yellow-500 rounded-full shadow-md border-2 border-white'></div>
-                    <div className='w-6 h-6 bg-yellow-500 rounded-full shadow-md border-2 border-white'></div>
+                    {[...Array(4)].map((_, i)=> (
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                    ))}
                 </div>
             </div>
 
