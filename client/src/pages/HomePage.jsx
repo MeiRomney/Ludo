@@ -1,14 +1,32 @@
 import React from 'react'
 import LudoImg from '../assets/Ludo.png'
 import { Outlet, useNavigate } from 'react-router-dom'
+//import { SignInButton, UserButton, useUser } from '@clerk/clerk-react'
 
 const HomePage = () => {
 
   const navigate = useNavigate()
+//  const { isSignedIn } = useUser()
 
   return (
     <>
       <div className='relative flex flex-col items-center justify-center h-screen pb-40 bg-gradient-to-r from-purple-200 to-pink-200'>
+        {/* Top bar for profile/sign in
+        <div className='absolute top-5 right-5 flex items-center gap-4'>
+          {isSignedIn ? (
+            <UserButton afterSignOutUrl='/' appearance={{
+              elements: { userButtonAvatarBox: "w-10 h-10" }
+            }} />
+          ) : (
+            <SignInButton mode='modal'>
+              <button className='px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-md hover:scale-95 transform transition'>
+                Sign In
+              </button>
+            </SignInButton>
+          )}
+        </div> */}
+
+        {/* Logo and title */}
         <div className='w-30 h-30'>
           <img src={LudoImg} alt="ludo" />
         </div>
