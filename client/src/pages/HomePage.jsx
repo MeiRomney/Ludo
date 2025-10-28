@@ -1,17 +1,17 @@
 import React from 'react'
 import LudoImg from '../assets/Ludo.png'
 import { Outlet, useNavigate } from 'react-router-dom'
-//import { SignInButton, UserButton, useUser } from '@clerk/clerk-react'
+import { SignInButton, UserButton, useUser } from '@clerk/clerk-react'
 
 const HomePage = () => {
 
   const navigate = useNavigate()
-//  const { isSignedIn } = useUser()
+  const { isSignedIn } = useUser()
 
   return (
     <>
       <div className='relative flex flex-col items-center justify-center h-screen pb-40 bg-gradient-to-r from-purple-200 to-pink-200'>
-        {/* Top bar for profile/sign in
+        {/* Top bar for profile/sign in */}
         <div className='absolute top-5 right-5 flex items-center gap-4'>
           {isSignedIn ? (
             <UserButton afterSignOutUrl='/' appearance={{
@@ -24,7 +24,7 @@ const HomePage = () => {
               </button>
             </SignInButton>
           )}
-        </div> */}
+        </div>
 
         {/* Logo and title */}
         <div className='w-30 h-30'>
