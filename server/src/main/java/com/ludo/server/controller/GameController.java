@@ -20,6 +20,13 @@ public class GameController {
         return gameService.startNewGame();
     }
 
+    @PostMapping("/move")
+    public void moveToken(@RequestParam String playerId,
+                          @RequestParam String tokenId,
+                          @RequestParam int steps) {
+        gameService.moveToken(playerId, tokenId, steps);
+    }
+
     @GetMapping("/roll")
     public int rollDice() {
         return gameService.rollDice();
