@@ -17,6 +17,7 @@ public class GameController {
 
     @PostMapping("/start")
     public Game startGame() {
+        System.out.println("🎯 /api/game/start endpoint hit!");
         return gameService.startNewGame();
     }
 

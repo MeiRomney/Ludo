@@ -1,6 +1,8 @@
 package com.ludo.server.model;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Represents a Ludo game session.
@@ -11,15 +13,41 @@ public class Game {
     private List<Player> players;
     private int currentTurn;
 
+    public Game() {
+        this.gameId = UUID.randomUUID().toString();
+        this.currentTurn = 0;
+        this.board = new Board();
+    }
+
     /**
      * Start by initializing the board and players
      */
     public void startGame() {
-        // Initialize baord and players
-        if(board == null) {
-            board.initializeBoard();
+        System.out.println("🎮 Starting game...");
+
+        if (board == null) {
+            System.out.println("Board is null, creating a new one...");
+            board = new Board();
         }
-        this.currentTurn = 0;
+
+        board.initializeBoard();
+        System.out.println("✅ Board initialized successfully!");
+
+        if(players == null || players.isEmpty()) {
+            System.out.println("⚠️ No players found, creating default players...");
+            Player red = new Player();
+            red.setPlayerId(UUID.randomUUID().toString());
+            red.setName("Red Player");
+            red.setColor("red");
+
+            Player blue = new Player();
+            blue.setPlayerId(UUID.randomUUID().toString());
+            blue.setName("Blue Player");
+            blue.setColor("blue");
+
+            players = List.of(red, blue);
+        }
+        System.out.println("✅ Game started with " + players.size() + " players.");
     }
 
     /**

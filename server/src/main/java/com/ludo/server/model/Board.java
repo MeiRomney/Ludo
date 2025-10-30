@@ -1,5 +1,6 @@
 package com.ludo.server.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,7 +15,22 @@ public class Board {
      * Initialize the board with cells and safe zones.
      */
     public void initializeBoard() {
-        // Logic to initialize board
+        if(cells == null) {
+            cells = new ArrayList<>();
+        }
+
+        if(safeZones == null) {
+            safeZones = new ArrayList<>();
+        }
+
+        for(int i = 0; i < 52; i++) {
+            Cell cell = new Cell();
+            cell.setCellId("cell-" + i);
+            cell.setPosition(i);
+            cell.setType("normal");
+            cells.add(cell);
+        }
+        System.out.println("Board initialized with " + cells.size() + " cells.");
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ludo.server.service;
 
+import com.ludo.server.model.Board;
 import com.ludo.server.model.Game;
 import com.ludo.server.model.Player;
 import org.springframework.stereotype.Service;
@@ -17,10 +18,11 @@ public class GameService {
      * @return the current game
      */
     public Game startNewGame() {
+        System.out.println("⚙️ Starting new game...");
+
         currentGame = new Game();
         currentGame.setGameId(UUID.randomUUID().toString());
-        currentGame.startGame();
-
+        currentGame.setBoard(new Board());
         // Create players
         List<Player> players = new ArrayList<>();
 
@@ -39,6 +41,9 @@ public class GameService {
 
         currentGame.setPlayers(players);
 
+        currentGame.startGame();
+
+        System.out.println("✅ Game started successfully!");
         return currentGame;
     }
 
