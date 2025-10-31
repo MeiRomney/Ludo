@@ -17,6 +17,7 @@ public class Game {
         this.gameId = UUID.randomUUID().toString();
         this.currentTurn = 0;
         this.board = new Board();
+        this.players = new ArrayList<>();
     }
 
     /**
@@ -35,6 +36,7 @@ public class Game {
 
         if(players == null || players.isEmpty()) {
             System.out.println("⚠️ No players found, creating default players...");
+
             Player red = new Player();
             red.setPlayerId(UUID.randomUUID().toString());
             red.setName("Red Player");
@@ -66,6 +68,7 @@ public class Game {
      * @param steps
      */
     public void moveToken(String playerId, String tokenId, int steps) {
+        if(players == null || players.isEmpty()) return;
         // Logic to move token on board
         Player player = players.stream()
                 .filter(p -> p.getPlayerId().equals(playerId))
@@ -81,6 +84,7 @@ public class Game {
      * @return the winner, or null if none yet
      */
     public Player checkWinner() {
+        if(players == null || players.isEmpty()) return null;
         // Logic to check if a player has all tokens finished
         for(Player player: players) {
             boolean allFinished = player.getTokens().stream().allMatch(Token::isFinished);
@@ -96,7 +100,6 @@ public class Game {
     public String getGameId() {
         return gameId;
     }
-
     public void setGameId(String gameId) {
         this.gameId = gameId;
     }
@@ -104,7 +107,6 @@ public class Game {
     public Board getBoard() {
         return board;
     }
-
     public void setBoard(Board board) {
         this.board = board;
     }
@@ -112,7 +114,6 @@ public class Game {
     public List<Player> getPlayers() {
         return players;
     }
-
     public void setPlayers(List<Player> players) {
         this.players = players;
     }
@@ -120,7 +121,6 @@ public class Game {
     public int getCurrentTurn() {
         return currentTurn;
     }
-
     public void setCurrentTurn(int currentTurn) {
         this.currentTurn = currentTurn;
     }

@@ -21,8 +21,8 @@ public class GameService {
         System.out.println("⚙️ Starting new game...");
 
         currentGame = new Game();
-        currentGame.setGameId(UUID.randomUUID().toString());
-        currentGame.setBoard(new Board());
+//        currentGame.setGameId(UUID.randomUUID().toString());
+//        currentGame.setBoard(new Board());
         // Create players
         List<Player> players = new ArrayList<>();
 
@@ -40,6 +40,11 @@ public class GameService {
         players.add(blue);
 
         currentGame.setPlayers(players);
+
+        // Ensures board exists before starting
+        if(currentGame.getBoard() == null) {
+            currentGame.setBoard(new Board());
+        }
 
         currentGame.startGame();
 
@@ -74,6 +79,7 @@ public class GameService {
      * Moves to the next player's turn
      */
     public void nextTurn() {
+        if(currentGame == null || currentGame.getPlayers() == null || currentGame.getPlayers().isEmpty()) return;
         int next = (currentGame.getCurrentTurn() + 1) % currentGame.getPlayers().size();
         currentGame.setCurrentTurn(next);
     }
