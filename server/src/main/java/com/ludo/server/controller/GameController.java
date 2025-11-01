@@ -37,4 +37,9 @@ public class GameController {
     public Player checkWinner() {
         return gameService.checkWinner();
     }
+
+    @GetMapping("/state")
+    public Game getCurrentGame() {
+        return gameService.getCurrentGame();
+    }
 }

@@ -50,6 +50,11 @@ public class Game {
             players = List.of(red, blue);
         }
         System.out.println("✅ Game started with " + players.size() + " players.");
+
+        for(Player player : players) {
+            player.initializeTokens();
+        }
+        System.out.println("🎯 Tokens initialized for all players.");
     }
 
     /**

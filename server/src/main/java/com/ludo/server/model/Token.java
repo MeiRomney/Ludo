@@ -8,6 +8,7 @@ public class Token {
     private int position;
     private boolean isActive;
     private boolean isFinished;
+    private String playerId;
 
     /**
      * Moves the token forward by a given number of steps.
@@ -34,7 +35,6 @@ public class Token {
     public String getTokenId() {
         return tokenId;
     }
-
     public void setTokenId(String tokenId) {
         this.tokenId = tokenId;
     }
@@ -42,7 +42,6 @@ public class Token {
     public int getPosition() {
         return position;
     }
-
     public void setPosition(int position) {
         this.position = position;
     }
@@ -50,7 +49,6 @@ public class Token {
     public boolean isActive() {
         return isActive;
     }
-
     public void setActive(boolean active) {
         isActive = active;
     }
@@ -58,8 +56,14 @@ public class Token {
     public boolean isFinished() {
         return isFinished;
     }
-
     public void setFinished(boolean finished) {
         isFinished = finished;
+    }
+
+    public String getPlayerId() {
+        return playerId;
+    }
+    public void setPlayerId(String playerId) {
+        this.playerId = playerId;
     }
 }
