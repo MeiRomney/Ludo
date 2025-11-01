@@ -1,5 +1,7 @@
 package com.ludo.server.model;
 
+import java.util.UUID;
+
 /**
  * Represents a player's token in the Ludo game.
  */
@@ -10,6 +12,12 @@ public class Token {
     private boolean isFinished;
     private String playerId;
 
+    public Token() {
+        this.tokenId = UUID.randomUUID().toString();
+        this.position = -1;
+        this.isFinished = false;
+    }
+
     /**
      * Moves the token forward by a given number of steps.
      * @param steps
@@ -18,6 +26,10 @@ public class Token {
         // Logic to move
         if(isActive && !isFinished) {
             position += steps;
+        }
+        if(position > 52) {
+            position = 52;
+            isFinished = true;
         }
     }
 

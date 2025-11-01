@@ -30,21 +30,18 @@ public class GameService {
         red.setPlayerId(UUID.randomUUID().toString());
         red.setName("Red Player");
         red.setColor("red");
+        red.initializeTokens();
 
         Player blue = new Player();
         blue.setPlayerId(UUID.randomUUID().toString());
         blue.setName("Blue Player");
         blue.setColor("blue");
+        blue.initializeTokens();
 
         players.add(red);
         players.add(blue);
 
         currentGame.setPlayers(players);
-
-        // Ensures board exists before starting
-        if(currentGame.getBoard() == null) {
-            currentGame.setBoard(new Board());
-        }
 
         currentGame.startGame();
 
@@ -62,7 +59,7 @@ public class GameService {
         }
 
         int value = currentGame.rollDice();
-        nextTurn();
+        System.out.println("Dice rolled: " + value);
         return value;
     }
 
@@ -95,6 +92,7 @@ public class GameService {
             throw new IllegalStateException("Game has not been started yet!");
         }
         currentGame.moveToken(playerId, tokenId, steps);
+        nextTurn();
     }
 
     public Game getCurrentGame() {

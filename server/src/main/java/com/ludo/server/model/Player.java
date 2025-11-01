@@ -19,6 +19,9 @@ public class Player {
         this.score = 0;
     }
 
+    /**
+     * Initialize four tokens for this player
+     */
     public void initializeTokens() {
         this.tokens = new ArrayList<>();
         for(int i = 0; i < 4; i++) {
@@ -29,6 +32,7 @@ public class Player {
             token.setFinished(false);
             tokens.add(token);
         }
+        System.out.println("Tokens initialized for " + name);
     }
 
     /**
@@ -45,20 +49,17 @@ public class Player {
      */
     public void moveToken(String tokenId, int steps) {
         // Logic to move tokens
-//        for(Token token : tokens) {
-//            if(token.getTokenId().equals(tokenId) && token.isActive()) {
-//                token.move(steps);
-//                break;
-//            }
-//        }
         Token token = tokens.stream()
                 .filter(t -> t.getTokenId().equals(tokenId))
                 .findFirst()
                 .orElse(null);
 
-        if(token != null) {
-            token.move(steps);
+        if(token == null) {
+            System.out.println("Token not found: " + tokenId);
+            return;
         }
+        token.move(steps);
+        System.out.println("Moved " + tokenId + " by " + steps + " steps.");
     }
 
     /**

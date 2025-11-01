@@ -79,9 +79,12 @@ public class Game {
                 .filter(p -> p.getPlayerId().equals(playerId))
                 .findFirst().orElse(null);
 
-        if(player != null) {
-            player.moveToken(tokenId, steps);
+        if(player == null) {
+            System.out.println("⚠️ Player not found: " + playerId);
+            return;
         }
+
+        player.moveToken(tokenId, steps);
     }
 
     /**
@@ -94,6 +97,7 @@ public class Game {
         for(Player player: players) {
             boolean allFinished = player.getTokens().stream().allMatch(Token::isFinished);
             if(allFinished) {
+                System.out.println("Winner found: " + player.getName());
                 return player;
             }
         }
