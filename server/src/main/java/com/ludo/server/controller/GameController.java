@@ -22,10 +22,11 @@ public class GameController {
     }
 
     @PostMapping("/move")
-    public void moveToken(@RequestParam String playerId,
+    public Game moveToken(@RequestParam String playerId,
                           @RequestParam String tokenId,
                           @RequestParam int steps) {
         gameService.moveToken(playerId, tokenId, steps);
+        return gameService.getCurrentGame();
     }
 
     @GetMapping("/roll")

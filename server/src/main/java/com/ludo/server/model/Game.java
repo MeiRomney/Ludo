@@ -77,14 +77,20 @@ public class Game {
         // Logic to move token on board
         Player player = players.stream()
                 .filter(p -> p.getPlayerId().equals(playerId))
-                .findFirst().orElse(null);
-
+                .findFirst()
+                .orElse(null);
         if(player == null) {
             System.out.println("⚠️ Player not found: " + playerId);
             return;
         }
-
         player.moveToken(tokenId, steps);
+
+        System.out.println("After move:");
+        for(Player p: players) {
+            for(Token t: p.getTokens()) {
+                System.out.println(p.getColor() + " token " + t.getTokenId() + " moved to " + t.getPosition());
+            }
+        }
     }
 
     /**

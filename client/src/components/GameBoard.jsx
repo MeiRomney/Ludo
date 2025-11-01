@@ -1,7 +1,71 @@
 import { Star } from 'lucide-react';
 import React from 'react'
 
-const GameBoard = () => {
+const GameBoard = ({ players }) => {
+
+    const redPath = [
+        [1, 6], [2, 6], [3, 6], [4, 6], [5, 6],
+        [6, 5], [6, 4], [6, 3], [6, 2], [6, 1], [6, 0],
+        [7, 0], 
+        [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5],
+        [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
+        [14, 7], 
+        [14, 8], [13, 8], [12, 8], [11, 8], [10, 8], [9, 8],
+        [8, 9], [8, 10], [8, 11], [8, 12], [8, 13], [8, 14],
+        [7, 14],
+        [6, 14], [6, 13], [6, 12], [6, 11], [6, 10], [6, 9],
+        [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
+        [0, 7], [1, 7], [2, 7], [3, 7], [4, 7], [5, 7],
+    ]
+    const bluePath = [
+        [8, 1], [8, 2], [8, 3], [8, 4], [8, 5],
+        [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
+        [14, 7], 
+        [14, 8], [13, 8], [12, 8], [11, 8], [10, 8], [9, 8],
+        [8, 9], [8, 10], [8, 11], [8, 12], [8, 13], [8, 14],
+        [7, 14],
+        [6, 14], [6, 13], [6, 12], [6, 11], [6, 10], [6, 9],
+        [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
+        [0, 7], 
+        [0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6],
+        [6, 5], [6, 4], [6, 3], [6, 2], [6, 1], [6, 0],
+        [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5],
+    ]
+    const yellowPath = [
+        [13, 8], [12, 8], [11, 8], [10, 8], [9, 8],
+        [8, 9], [8, 10], [8, 11], [8, 12], [8, 13], [8, 14],
+        [7, 14],
+        [6, 14], [6, 13], [6, 12], [6, 11], [6, 10], [6, 9],
+        [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
+        [0, 7], 
+        [0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6],
+        [6, 5], [6, 4], [6, 3], [6, 2], [6, 1], [6, 0],
+        [7, 0],
+        [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5],
+        [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
+        [14, 7], [13, 7], [12, 7], [11, 7], [10, 7], [9, 7],
+    ]
+    const greenPath = [
+        [6, 13], [6, 12], [6, 11], [6, 10], [6, 9],
+        [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
+        [0, 7], 
+        [0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6],
+        [6, 5], [6, 4], [6, 3], [6, 2], [6, 1], [6, 0],
+        [7, 0],
+        [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5],
+        [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
+        [14, 7],
+        [14, 8], [13, 8], [12, 8], [11, 8], [10, 8], [9, 8],
+        [8, 9], [8, 10], [8, 11], [8, 12], [8, 13], [8, 14],
+        [7, 14], [7, 13], [7, 12], [7, 11], [7, 10], [7, 9],
+    ]
+
+    const homeCoordinate = {
+        red: [[2,2], [2,3], [3,2], [3,3]],
+        blue: [[2,11], [2,12], [3,11], [3,12]],
+        green: [[11,2], [11,3], [12,2], [12,3]],
+        yellow: [[11,11], [11,12], [12,11], [12,12]],
+    }
 
     const blueSafeZone = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [1, 8],];
     const redSafeZone = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [6, 1],];
@@ -30,10 +94,10 @@ const GameBoard = () => {
     const yellowHome = { rowStart: 9, colStart: 9, color: "bg-yellow-200", border: "border-yellow-400" };
 
     // Pieces starting position
-    const redPieces = [[2,2], [2,3], [3,2], [3,3]];
-    const bluePieces = [[2,11], [2,12], [3,11], [3,12]];
-    const greenPieces = [[11,2], [11,3], [12,2], [12,3]];
-    const yellowPieces = [[11,11], [11,12], [12,11], [12,12]];
+    // const redPieces = [[2,2], [2,3], [3,2], [3,3]];
+    // const bluePieces = [[2,11], [2,12], [3,11], [3,12]];
+    // const greenPieces = [[11,2], [11,3], [12,2], [12,3]];
+    // const yellowPieces = [[11,11], [11,12], [12,11], [12,12]];
 
     // helper function
     const match = (arr, row, col) => arr.some(([r, c]) => r === row && c === col);
@@ -46,6 +110,42 @@ const GameBoard = () => {
         return "bg-white";
     }
 
+    const getPathByColor = (color) => {
+        switch(color) {
+            case 'red': return redPath;
+            case 'blue': return bluePath;
+            case 'yellow': return yellowPath;
+            case 'green': return greenPath;
+            default: return [];
+        }
+    }
+
+    const getTokenPositions = () => {
+        const tokens = [];
+
+        players.forEach((player) => {
+            const path = getPathByColor(player.color);
+            const colorClass = {
+                red: "bg-red-500",
+                blue: "bg-blue-500",
+                yellow: "bg-yellow-500",
+                green: "bg-green-500",
+            }[player.color];
+
+            player.tokens?.forEach((token, index) => {
+                let pos;
+                if(token.position === -1) {
+                    pos = homeCoordinate[player.color][index];
+                } else {
+                    pos = path[token.position];
+                }
+
+                tokens.push({ color: colorClass, pos});
+            });
+        });
+        return tokens;
+    };
+
     const getPieceOffset = (index, total) => {
         const offsetAmount = 4;
         const positions = [
@@ -57,13 +157,15 @@ const GameBoard = () => {
         return positions[index % positions.length];
     }
 
+    const allPieces = getTokenPositions();
+
     const renderPieces = (row, col) => {
-        const allPieces = [
-            ...redPieces.map((pos) => ({ color: "bg-red-500", pos })),
-            ...bluePieces.map((pos) => ({ color: "bg-blue-500", pos })),
-            ...greenPieces.map((pos) => ({ color: "bg-green-500", pos })),
-            ...yellowPieces.map((pos) => ({ color: "bg-yellow-500", pos })),
-        ]
+        // const allPieces = [
+        //     ...redPieces.map((pos) => ({ color: "bg-red-500", pos })),
+        //     ...bluePieces.map((pos) => ({ color: "bg-blue-500", pos })),
+        //     ...greenPieces.map((pos) => ({ color: "bg-green-500", pos })),
+        //     ...yellowPieces.map((pos) => ({ color: "bg-yellow-500", pos })),
+        // ]
 
         // Find all pieces in this cell
         const piecesHere = allPieces.filter(

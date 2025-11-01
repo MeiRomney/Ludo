@@ -58,8 +58,31 @@ public class Player {
             System.out.println("Token not found: " + tokenId);
             return;
         }
-        token.move(steps);
-        System.out.println("Moved " + tokenId + " by " + steps + " steps.");
+
+        // If the token is still at home (-1), move it out when the player rolls a 6
+        if(token.getPosition() == -1) {
+            if(steps == 6) {
+                token.setPosition(0);
+                token.setActive(true);
+                System.out.println("Token " + tokenId + " entered the board.");
+            } else {
+                System.out.println("You need to roll a 6 to move token " + tokenId + "out.");
+            }
+            return;
+        }
+
+        // Move active token normally
+        if(token.isActive() && !token.isFinished()) {
+            int newPosition = token.getPosition() + steps;
+            if(newPosition >= 52) {
+                token.setPosition(52);
+                token.setFinished(true);
+                System.out.println("Token " + tokenId + " reached the end.");
+            } else {
+                token.setPosition(newPosition);
+                System.out.println("Token " + tokenId + "moved to " + newPosition);
+            }
+        }
     }
 
     /**
