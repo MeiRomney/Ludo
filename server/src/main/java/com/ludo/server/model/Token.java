@@ -27,8 +27,8 @@ public class Token {
         if(isActive && !isFinished) {
             position += steps;
         }
-        if(position > 52) {
-            position = 52;
+        if(position > 56) {
+            position = 56;
             isFinished = true;
         }
     }

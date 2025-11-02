@@ -32,7 +32,6 @@ public class Cell {
     public String getCellId() {
         return cellId;
     }
-
     public void setCellId(String cellId) {
         this.cellId = cellId;
     }
@@ -40,7 +39,6 @@ public class Cell {
     public int getPosition() {
         return position;
     }
-
     public void setPosition(int position) {
         this.position = position;
     }
@@ -48,7 +46,6 @@ public class Cell {
     public String getType() {
         return type;
     }
-
     public void setType(String type) {
         this.type = type;
     }

@@ -28,6 +28,34 @@ const GamePlay = () => {
     console.log("pause");
   }
 
+  const handleDiceRoll = async (player, steps) => {
+    if(!player || !steps) return;
+
+    try {
+      // Choose the first available token (You can UI for this later)
+      const token = player.tokens?.find(t => !t.isFinished);
+      if(!token) {
+        console.warn("No movable token for player: " + player.name);
+        return;
+      }
+
+      const moveRes = await fetch(
+        `http://localhost:8080/api/game/move?playerId=${player.playerId}&tokenId=${token.tokenId}&steps=${steps}`,
+        { method: "POST" }
+      );
+
+      if(!moveRes.ok) {
+        console.error("Failed to move token");
+        return;
+      }
+
+      const updatedGame = await moveRes.json();
+      setGame(updatedGame); // Refresh board instantly
+    } catch (err) {
+      console.error("Error moving token: ", err);
+    }
+  }
+
   // const players = [
   //   { color: '#FF4C4C', name: 'Red', pieces: [1, 2, 3, 0] },
   //   { color: '#28A745', name: 'Green', pieces: [3, 0, 1, 0] },
@@ -77,7 +105,11 @@ const GamePlay = () => {
                   active={game.currentTurn === 0}
                 />
               )}
-              <Dice name={game?.players?.[0]?.name || "Player 1"}/>
+              <Dice 
+                name={game?.players?.[0]?.name || "Player 1"}
+                player={game?.players?.[0]}
+                onDiceRoll={(value) => handleDiceRoll(game?.players?.[0], value)}
+              />
             </div>
             
             {/* Center - Game board */}
@@ -97,7 +129,11 @@ const GamePlay = () => {
                     pieces={[0, 0, 0, 0]}
                     active={game.currentTurn === i + 1}
                   />
-                  <Dice name={p.name}/>
+                  <Dice 
+                    name={p.name}
+                    player={p}
+                    onDiceRoll={(value) => handleDiceRoll(p, value)}
+                  />
                 </React.Fragment>
               ))}
             </div>

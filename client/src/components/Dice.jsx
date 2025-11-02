@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const Dice = ({name}) => {
+const Dice = ({ name, player, onDiceRoll }) => {
 
   const [value, setValue] = useState(null);
   const [rolling, setRolling] = useState(false);
@@ -12,6 +12,8 @@ const Dice = ({name}) => {
       const data = await res.json();
       setValue(data);
       console.log(`${name} rolled a ${data}`);
+
+      if(onDiceRoll) onDiceRoll(data);
     } catch(err) {
       console.log('Error rolling dice', err);
     } finally {

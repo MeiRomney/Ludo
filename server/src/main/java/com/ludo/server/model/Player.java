@@ -74,8 +74,8 @@ public class Player {
         // Move active token normally
         if(token.isActive() && !token.isFinished()) {
             int newPosition = token.getPosition() + steps;
-            if(newPosition >= 52) {
-                token.setPosition(52);
+            if(newPosition >= 56) {
+                token.setPosition(56);
                 token.setFinished(true);
                 System.out.println("Token " + tokenId + " reached the end.");
             } else {

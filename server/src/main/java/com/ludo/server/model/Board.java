@@ -23,7 +23,7 @@ public class Board {
             safeZones = new ArrayList<>();
         }
 
-        for(int i = 0; i < 52; i++) {
+        for(int i = 0; i < 56; i++) {
             Cell cell = new Cell();
             cell.setCellId("cell-" + i);
             cell.setPosition(i);
