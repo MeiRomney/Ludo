@@ -33,6 +33,22 @@ public class Token {
         }
     }
 
+    public boolean canMove(int steps) {
+        // If token is already finished, can't move
+        if(isFinished) {
+            return false;
+        }
+
+        // If token is at home
+        if(position == -1) {
+            // Can only come out if it rolled a 6
+            return steps == 6;
+        }
+
+        // Regular move
+        return position + steps <= 56; // Adjust limit for the board
+    }
+
     /**
      * Resets the token to its starting position
      */

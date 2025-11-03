@@ -9,6 +9,9 @@ const GamePlay = () => {
 
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
+  const [pendingRoll, setPendingRoll] = useState(null); // Stores rolled number waiting for move
+  const [roller, setRoller] = useState(null); // which player rolled last
+  const [token, setSelectedToken] = useState(null);
 
   useEffect(() => {
     // Fetch current game state from backend
@@ -28,19 +31,30 @@ const GamePlay = () => {
     console.log("pause");
   }
 
-  const handleDiceRoll = async (player, steps) => {
-    if(!player || !steps) return;
+  // Player rolls dice, just store the result, don't move yet
+  const handleDiceRoll = async(player, value) => {
+    if(!player || value == null) return;
+    console.log(`🎲 ${player.name} rolled ${value}`);
+    setPendingRoll(value);
+    setRoller(player);
+  };
+
+  // When token clicked on board
+  const handleTokenSelect = async ({playerColor, tokenId}) => {
+    if(!game || !pendingRoll) {
+      alert("Please roll the dice first!");
+      return;
+    }
+
+    const player = game.players.find((p) => p.color === playerColor);
+    if(!player || player.playerId !== roller?.playerId) {
+      alert("Not your turn!");
+      return;
+    }
 
     try {
-      // Choose the first available token (You can UI for this later)
-      const token = player.tokens?.find(t => !t.isFinished);
-      if(!token) {
-        console.warn("No movable token for player: " + player.name);
-        return;
-      }
-
       const moveRes = await fetch(
-        `http://localhost:8080/api/game/move?playerId=${player.playerId}&tokenId=${token.tokenId}&steps=${steps}`,
+        `http://localhost:8080/api/game/move?playerId=${player.playerId}&tokenId=${tokenId}&steps=${pendingRoll}`,
         { method: "POST" }
       );
 
@@ -51,6 +65,9 @@ const GamePlay = () => {
 
       const updatedGame = await moveRes.json();
       setGame(updatedGame); // Refresh board instantly
+      setPendingRoll(null);
+      setRoller(null);
+      setSelectedToken(null);
     } catch (err) {
       console.error("Error moving token: ", err);
     }
@@ -93,7 +110,12 @@ const GamePlay = () => {
       <div className="relative flex-1 flex justify-center items-center p-6">
         {/* Center Game Board */}
         <div className="w-[500px] h-[500px] flex items-center justify-center">
-          {game && <GameBoard players={game.players} />}
+          {game && <GameBoard 
+          players={game.players}
+          currentPlayer={game.players[game.currentTurn]}
+          onMove={(data) => handleTokenSelect(data)}
+          selectable={!!pendingRoll} // allow selecting token if dice is rolled
+          />}
         </div>
 
         {/* Player Positions */}
@@ -116,7 +138,7 @@ const GamePlay = () => {
               <PlayerCard
                 color={player.color}
                 name={player.name}
-                pieces={[0, 0, 0, 0]}
+                pieces={player.tokens.map((t) => t.position)}
                 active={isActive}
               />
               <Dice
@@ -124,6 +146,11 @@ const GamePlay = () => {
                 player={player}
                 onDiceRoll={(value) => handleDiceRoll(player, value)}
               />
+              {isActive && pendingRoll && roller?.playerId === player.playerId && (
+                <div className='text-sm text-gray-600'>
+                  Rolled: <b>{pendingRoll}</b> - Select a Token to move
+                </div>
+              )}
             </div>
           );
         })}

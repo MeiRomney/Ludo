@@ -1,7 +1,9 @@
 import { Star } from 'lucide-react';
-import React from 'react'
+import React, { useState } from 'react'
 
-const GameBoard = ({ players }) => {
+const GameBoard = ({ players, currentPlayer, onMove }) => {
+
+    const [selectedToken, setSelectedToken] = useState(null);
 
     const redPath = [
         [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
@@ -120,6 +122,17 @@ const GameBoard = ({ players }) => {
         }
     }
 
+    const handleTokenClick = (playerColor, tokenId) => {
+        // Only allow clicking current player's tokens
+        if(currentPlayer?.color != playerColor) return;
+        setSelectedToken(tokenId);
+
+        // Notify parent which token was selected
+        if(onMove) {
+            onMove({playerColor, tokenId });
+        }
+    };
+
     const getTokenPositions = () => {
         const tokens = [];
 
@@ -140,7 +153,7 @@ const GameBoard = ({ players }) => {
                     pos = path[token.position];
                 }
 
-                tokens.push({ color: colorClass, pos});
+                tokens.push({ color: colorClass, pos, playerColor: player.color, tokenId: token.tokenId });
             });
         });
         return tokens;
@@ -177,13 +190,17 @@ const GameBoard = ({ players }) => {
             return (
                 <div
                 key={i}
-                className={`w-6 h-6 ${piece.color} rounded-full border-2 border-white z-10`}
+                onClick={() => handleTokenClick(piece.playerColor, piece.tokenId)}
+                className={`w-6 h-6 ${piece.color} rounded-full border-2 z-10 ${
+                    selectedToken === piece.tokenId ? 'ring-4 ring-yellow-400' : ''
+                }`}
                 style={{
                     position: 'absolute',
                     top: '25%',
                     left: '25%',
                     transform: `translate(${x}px, ${y}px)`
-                }}></div>
+                }}
+                title={`${piece.playerColor} token`}></div>
             )
         })
     }

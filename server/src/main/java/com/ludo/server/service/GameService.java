@@ -98,8 +98,39 @@ public class GameService {
             throw new IllegalStateException("❌ It's not " + playerId + "'s turn!");
         }
 
+        // Find the chosen token
+        var token = current.getTokens().stream()
+                .filter(t -> t.getTokenId().equals(tokenId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("❌ Invalid tokenId for player"));
+
+        // Determine which tokens are movable
+        var movableTokens = current.getTokens().stream()
+                .filter(t -> t.canMove(steps))
+                .toList();
+
+        // Auto-select if only one movable token
+        if(movableTokens.size() == 1 && !token.canMove(steps)) {
+            token = movableTokens.get(0);
+        }
+
+        // Check if movement is possible
+        if(!token.canMove(steps)) {
+            System.out.println("⚠️ Token cannot move " + steps + " steps.");
+            // If the player rolled 6 and can't move any token, still allow another turn
+            if(lastRollValue == 6) {
+                System.out.println("🎁 " + current.getName() + " rolled 6 but can't move — still gets another turn!");
+                lastRollValue = 0;
+                return;
+            } else {
+                nextTurn();
+                lastRollValue = 0;
+                return;
+            }
+        }
+
         // Perform the single token movement (only once)
-        currentGame.moveToken(playerId, tokenId, steps);
+        currentGame.moveToken(playerId, token.getTokenId(), steps);
 
         // Debug logging of positions after the move
         System.out.println("After move: ");
