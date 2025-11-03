@@ -12,6 +12,7 @@ import java.util.UUID;
 @Service
 public class GameService {
     private Game currentGame;
+    private int lastRollValue = 0;
 
     /**
      * Starts a new game with two default players
@@ -56,7 +57,6 @@ public class GameService {
         players.add(green);
 
         currentGame.setPlayers(players);
-
         currentGame.startGame();
 
         System.out.println("✅ Game started successfully!");
@@ -73,8 +73,56 @@ public class GameService {
         }
 
         int value = currentGame.rollDice();
-        System.out.println("Dice rolled: " + value);
+        lastRollValue = value;
+
+        Player current = getCurrentPlayer();
+        System.out.println("🎲 " + current.getName() + " rolled a " + value);
         return value;
+    }
+
+    /**
+     * Moves a token for the current player using the provided steps
+     * if steps == 6 the same player keeps the turn; otherwise move to the next player
+     * @param playerId
+     * @param tokenId
+     * @param steps
+     */
+    public void moveToken(String playerId, String tokenId, int steps) {
+        if(currentGame == null) {
+            throw new IllegalStateException("Game has not been started yet!");
+        }
+
+        Player current = getCurrentPlayer();
+
+        if(!current.getPlayerId().equals(playerId)) {
+            throw new IllegalStateException("❌ It's not " + playerId + "'s turn!");
+        }
+
+        // Perform the single token movement (only once)
+        currentGame.moveToken(playerId, tokenId, steps);
+
+        // Debug logging of positions after the move
+        System.out.println("After move: ");
+        for(Player p : currentGame.getPlayers()) {
+            p.getTokens().forEach(t -> System.out.println(p.getColor() + " token " + t.getTokenId() + " -> " + t.getPosition()));
+        }
+
+        // Check if player won
+        Player winner = currentGame.checkWinner();
+        if(winner != null) {
+            System.out.println("🏆 Winner found: " + winner.getName());
+            return;
+        }
+
+        // Extra turn logic if 6 is rolled, same players plays again
+        if(lastRollValue == 6) {
+            System.out.println("🎁 " + current.getName() + " rolled a 6 and gets another turn!");
+        } else {
+            nextTurn();
+        }
+
+        // Clear last rolled value to avoid accidental reuse
+        lastRollValue = 0;
     }
 
     /**
@@ -93,20 +141,13 @@ public class GameService {
         if(currentGame == null || currentGame.getPlayers() == null || currentGame.getPlayers().isEmpty()) return;
         int next = (currentGame.getCurrentTurn() + 1) % currentGame.getPlayers().size();
         currentGame.setCurrentTurn(next);
+
+        Player nextPlayer = getCurrentPlayer();
+        System.out.println("➡️ Next turn: " + nextPlayer.getName());
     }
 
-    /**
-     * Moves a token for a player
-     * @param playerId
-     * @param tokenId
-     * @param steps
-     */
-    public void moveToken(String playerId, String tokenId, int steps) {
-        if(currentGame == null) {
-            throw new IllegalStateException("Game has not been started yet!");
-        }
-        currentGame.moveToken(playerId, tokenId, steps);
-        nextTurn();
+    private Player getCurrentPlayer() {
+        return currentGame.getPlayers().get(currentGame.getCurrentTurn());
     }
 
     public Game getCurrentGame() {
