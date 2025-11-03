@@ -47,7 +47,17 @@ public class Game {
             blue.setName("Blue Player");
             blue.setColor("blue");
 
-            players = List.of(red, blue);
+            Player yellow = new Player();
+            yellow.setPlayerId(UUID.randomUUID().toString());
+            yellow.setName("Yellow Player");
+            yellow.setColor("yellow");
+
+            Player green = new Player();
+            green.setPlayerId(UUID.randomUUID().toString());
+            green.setName("Green Player");
+            green.setColor("green");
+
+            players = List.of(red, blue, yellow, green);
         }
         System.out.println("✅ Game started with " + players.size() + " players.");
 

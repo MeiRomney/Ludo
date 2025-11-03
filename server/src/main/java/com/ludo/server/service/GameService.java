@@ -38,8 +38,22 @@ public class GameService {
         blue.setColor("blue");
         blue.initializeTokens();
 
+        Player yellow = new Player();
+        yellow.setPlayerId(UUID.randomUUID().toString());
+        yellow.setName("Yellow Player");
+        yellow.setColor("yellow");
+        yellow.initializeTokens();
+
+        Player green = new Player();
+        green.setPlayerId(UUID.randomUUID().toString());
+        green.setName("Green Player");
+        green.setColor("green");
+        green.initializeTokens();
+
         players.add(red);
         players.add(blue);
+        players.add(yellow);
+        players.add(green);
 
         currentGame.setPlayers(players);
 
