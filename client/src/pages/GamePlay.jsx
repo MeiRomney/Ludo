@@ -36,7 +36,7 @@ const GamePlay = () => {
     if(!player || value == null) return;
     console.log(`🎲 ${player.name} rolled ${value}`);
     setPendingRoll(value);
-    setRoller(player);
+    setRoller(player); 
   };
 
   // When token clicked on board
@@ -72,13 +72,6 @@ const GamePlay = () => {
       console.error("Error moving token: ", err);
     }
   }
-
-  // const players = [
-  //   { color: '#FF4C4C', name: 'Red', pieces: [1, 2, 3, 0] },
-  //   { color: '#28A745', name: 'Green', pieces: [3, 0, 1, 0] },
-  //   { color: '#4C6FFF', name: 'Blue', pieces: [2, 1, 1, 0] },
-  //   { color: '#FFD93D', name: 'Yellow', pieces: [0, 3, 1, 0] },
-  // ];
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">

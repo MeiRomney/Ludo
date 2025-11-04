@@ -95,12 +95,6 @@ const GameBoard = ({ players, currentPlayer, onMove }) => {
     const greenHome = { rowStart: 9, colStart: 0, color: "bg-green-200", border: "border-green-400" };
     const yellowHome = { rowStart: 9, colStart: 9, color: "bg-yellow-200", border: "border-yellow-400" };
 
-    // Pieces starting position
-    // const redPieces = [[2,2], [2,3], [3,2], [3,3]];
-    // const bluePieces = [[2,11], [2,12], [3,11], [3,12]];
-    // const greenPieces = [[11,2], [11,3], [12,2], [12,3]];
-    // const yellowPieces = [[11,11], [11,12], [12,11], [12,12]];
-
     // helper function
     const match = (arr, row, col) => arr.some(([r, c]) => r === row && c === col);
 
@@ -122,7 +116,7 @@ const GameBoard = ({ players, currentPlayer, onMove }) => {
         }
     }
 
-    const handleTokenClick = (playerColor, tokenId) => {
+    const handleTokenClick = (playerColor, tokenId) => {     
         // Only allow clicking current player's tokens
         if(currentPlayer?.color != playerColor) return;
         setSelectedToken(tokenId);
@@ -131,6 +125,8 @@ const GameBoard = ({ players, currentPlayer, onMove }) => {
         if(onMove) {
             onMove({playerColor, tokenId });
         }
+
+        setTimeout(() => setSelectedToken(null), 500);
     };
 
     const getTokenPositions = () => {

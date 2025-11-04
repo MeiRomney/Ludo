@@ -77,6 +77,22 @@ public class GameService {
 
         Player current = getCurrentPlayer();
         System.out.println("🎲 " + current.getName() + " rolled a " + value);
+
+        // Check if any token can move right now
+        var movableTokens = current.getTokens().stream()
+                .filter(t -> t.canMove(value))
+                .toList();
+
+        if(movableTokens.isEmpty()) {
+            System.out.println("⚠️ No possible moves for " + current.getName() + " with roll " + value);
+            if (value != 6) {
+                nextTurn();
+            } else {
+                System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
+            }
+            lastRollValue = 0;
+        }
+
         return value;
     }
 
@@ -109,24 +125,22 @@ public class GameService {
                 .filter(t -> t.canMove(steps))
                 .toList();
 
-        // Auto-select if only one movable token
-        if(movableTokens.size() == 1 && !token.canMove(steps)) {
-            token = movableTokens.get(0);
-        }
+        // If no token can move, skip automatically
+        if(movableTokens.isEmpty()) {
+            System.out.println("⚠️ No possible moves for " + current.getName() + " with roll " + steps);
 
-        // Check if movement is possible
-        if(!token.canMove(steps)) {
-            System.out.println("⚠️ Token cannot move " + steps + " steps.");
-            // If the player rolled 6 and can't move any token, still allow another turn
-            if(lastRollValue == 6) {
-                System.out.println("🎁 " + current.getName() + " rolled 6 but can't move — still gets another turn!");
-                lastRollValue = 0;
-                return;
+            if(steps == 6) {
+                System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
             } else {
                 nextTurn();
-                lastRollValue = 0;
-                return;
             }
+            lastRollValue = 0;
+            return;
+        }
+
+        // Auto-select if only one movable token
+        if(!token.canMove(steps)) {
+            token = movableTokens.get(0);
         }
 
         // Perform the single token movement (only once)
