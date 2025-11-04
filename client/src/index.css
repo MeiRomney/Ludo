@@ -4,3 +4,12 @@
 *{
   font-family: "Outfit", sans-serif;
 }
+
+.animate-glow {
+  animation: glowPulse 1s infinite alternate;
+}
+
+@keyframes glowPulse {
+  from { box-shadow: 0 0 8px 2px rgba(255, 200, 0, 0.7); }
+  to { box-shadow: 0 0 15px 4px rgba(255, 230, 0, 0.9); }
+}

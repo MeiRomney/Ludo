@@ -13,6 +13,7 @@ public class Player {
     private String color;
     private List<Token> tokens;
     private int score;
+    private int startOffset;
 
     public Player() {
         this.tokens = new ArrayList<>();
@@ -138,5 +139,12 @@ public class Player {
     }
     public void setScore(int score) {
         this.score = score;
+    }
+
+    public int getStartOffset() {
+        return startOffset;
+    }
+    public void setStartOffset(int startOffset) {
+        this.startOffset = startOffset;
     }
 }

@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react';
 import React, { useState } from 'react'
 
-const GameBoard = ({ players, currentPlayer, onMove }) => {
+const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
 
     const [selectedToken, setSelectedToken] = useState(null);
 
@@ -124,9 +124,8 @@ const GameBoard = ({ players, currentPlayer, onMove }) => {
         // Notify parent which token was selected
         if(onMove) {
             onMove({playerColor, tokenId });
+            setTimeout(() => setSelectedToken(null), 500);
         }
-
-        setTimeout(() => setSelectedToken(null), 500);
     };
 
     const getTokenPositions = () => {
@@ -166,6 +165,21 @@ const GameBoard = ({ players, currentPlayer, onMove }) => {
         return positions[index % positions.length];
     }
 
+    const getMovableTokenIds = () => {
+        if(!currentPlayer || !pendingRoll ) return [];
+
+        // Find token that can move with this roll
+        return currentPlayer.tokens
+            .filter(t => {
+                // Same rule as backend: can move if not in home (-1) and not finished
+                if(t.position === -1 && pendingRoll === 6) return true;
+                if(t.position >= 0 && t.position + pendingRoll <= 56) return true;
+                return false;
+            })
+            .map(t => t.tokenId);
+    }
+
+    const movableTokenIds = getMovableTokenIds();
     const allPieces = getTokenPositions();
 
     const renderPieces = (row, col) => {
@@ -188,7 +202,10 @@ const GameBoard = ({ players, currentPlayer, onMove }) => {
                 key={i}
                 onClick={() => handleTokenClick(piece.playerColor, piece.tokenId)}
                 className={`w-6 h-6 ${piece.color} rounded-full border-2 z-10 ${
-                    selectedToken === piece.tokenId ? 'ring-4 ring-yellow-400' : ''
+                    selectedToken === piece.tokenId ? 'ring-4 ring-yellow-400'
+                    : movableTokenIds.includes(piece.tokenId) && piece.playerColor === currentPlayer?.color
+                        ? 'ring-4 ring-amber-400 animate-glow'
+                        : ''
                 }`}
                 style={{
                     position: 'absolute',

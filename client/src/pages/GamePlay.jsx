@@ -108,6 +108,7 @@ const GamePlay = () => {
           currentPlayer={game.players[game.currentTurn]}
           onMove={(data) => handleTokenSelect(data)}
           selectable={!!pendingRoll} // allow selecting token if dice is rolled
+          pendingRoll={pendingRoll}
           />}
         </div>
 

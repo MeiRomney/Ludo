@@ -7,12 +7,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class GameService {
     private Game currentGame;
     private int lastRollValue = 0;
+
+    private static final Set<Integer> SAFE_CELLS = Set.of(0, 8, 13, 21, 26, 34, 39, 47);
 
     /**
      * Starts a new game with two default players
@@ -32,24 +35,28 @@ public class GameService {
         red.setName("Red Player");
         red.setColor("red");
         red.initializeTokens();
+        red.setStartOffset(0);
 
         Player blue = new Player();
         blue.setPlayerId(UUID.randomUUID().toString());
         blue.setName("Blue Player");
         blue.setColor("blue");
         blue.initializeTokens();
+        blue.setStartOffset(13);
 
         Player yellow = new Player();
         yellow.setPlayerId(UUID.randomUUID().toString());
         yellow.setName("Yellow Player");
         yellow.setColor("yellow");
         yellow.initializeTokens();
+        yellow.setStartOffset(26);
 
         Player green = new Player();
         green.setPlayerId(UUID.randomUUID().toString());
         green.setName("Green Player");
         green.setColor("green");
         green.initializeTokens();
+        green.setStartOffset(39);
 
         players.add(red);
         players.add(blue);
@@ -145,6 +152,24 @@ public class GameService {
 
         // Perform the single token movement (only once)
         currentGame.moveToken(playerId, token.getTokenId(), steps);
+
+        // Capture Logic
+        int newPos = token.getAbsolutePosition(current.getStartOffset());
+
+        // Only check captures if not in a safe zone
+        if(!SAFE_CELLS.contains(newPos)) {
+            for(Player p: currentGame.getPlayers()) {
+                if(p == current) continue;
+
+                for(var opponentToken: p.getTokens()) {
+                    int opponentPos = opponentToken.getAbsolutePosition(p.getStartOffset());
+                    if(opponentPos == newPos) {
+                        opponentToken.resetPosition(); // Sends back home
+                        System.out.println("💥 " + current.getName() + " captured " + p.getName() + "'s token!");
+                    }
+                }
+            }
+        }
 
         // Debug logging of positions after the move
         System.out.println("After move: ");

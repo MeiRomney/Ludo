@@ -25,7 +25,6 @@ public class Dice {
     public String getDiceId() {
         return diceId;
     }
-
     public void setDiceId(String diceId) {
         this.diceId = diceId;
     }
@@ -33,7 +32,6 @@ public class Dice {
     public int getValue() {
         return value;
     }
-
     public void setValue(int value) {
         this.value = value;
     }

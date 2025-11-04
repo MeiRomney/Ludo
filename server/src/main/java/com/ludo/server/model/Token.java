@@ -54,8 +54,17 @@ public class Token {
      */
     public void resetPosition() {
         // Logic to reset position
-        this.position = 0;
+        this.position = -1;
         this.isActive = false;
+    }
+
+    /**
+     * Gets the absolute position
+     * @return absolute position
+     */
+    public int getAbsolutePosition(int startOffset) {
+        if(position == -1 || isFinished) return -1;
+        return (startOffset + position) % 56;
     }
 
     // Getters and setters
