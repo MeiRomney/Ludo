@@ -14,6 +14,7 @@ import java.util.UUID;
 public class GameService {
     private Game currentGame;
     private int lastRollValue = 0;
+    private boolean diceRolledThisTurn = false;
 
     private static final Set<Integer> SAFE_CELLS = Set.of(0, 8, 13, 21, 26, 34, 39, 47);
 
@@ -74,15 +75,27 @@ public class GameService {
      * rolls the dice for the current player and moves to next turn
      * @return the value of the rolled dice
      */
-    public int rollDice() {
+    public synchronized int rollDice(String playerId) {
         if(currentGame == null) {
             throw new IllegalStateException("Game has not been started yet!");
         }
 
+        Player current = getCurrentPlayer();
+
+        // Ensures only current player can roll
+        if(!current.getPlayerId().equals(playerId)) {
+            throw new IllegalStateException("❌ It's not your turn!");
+        }
+
+        // Ensure they haven't already rolled this turn
+        if(diceRolledThisTurn) {
+            throw new IllegalStateException("⚠️ You've already rolled the dice this turn!");
+        }
+
         int value = currentGame.rollDice();
         lastRollValue = value;
+        diceRolledThisTurn = true;
 
-        Player current = getCurrentPlayer();
         System.out.println("🎲 " + current.getName() + " rolled a " + value);
 
         // Check if any token can move right now
@@ -98,6 +111,7 @@ public class GameService {
                 System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
             }
             lastRollValue = 0;
+            diceRolledThisTurn = false;
         }
 
         return value;
@@ -193,6 +207,7 @@ public class GameService {
 
         // Clear last rolled value to avoid accidental reuse
         lastRollValue = 0;
+        diceRolledThisTurn = false;
     }
 
     /**
@@ -211,6 +226,7 @@ public class GameService {
         if(currentGame == null || currentGame.getPlayers() == null || currentGame.getPlayers().isEmpty()) return;
         int next = (currentGame.getCurrentTurn() + 1) % currentGame.getPlayers().size();
         currentGame.setCurrentTurn(next);
+        diceRolledThisTurn = false;
 
         Player nextPlayer = getCurrentPlayer();
         System.out.println("➡️ Next turn: " + nextPlayer.getName());

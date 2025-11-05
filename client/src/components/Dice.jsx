@@ -6,9 +6,21 @@ const Dice = ({ name, player, onDiceRoll }) => {
   const [rolling, setRolling] = useState(false);
 
   const rollDice = async () => {
+    if(!player || !player.playerId) {
+      console.error("❌ Missing player in Dice component!", player);
+      return;
+    }
+
     setRolling(true);
     try {
-      const res = await fetch('http://localhost:8080/api/game/roll');
+      const res = await fetch(`http://localhost:8080/api/game/roll?playerId=${player.playerId}`);
+
+      if(!res.ok) {
+        const errorData = await res.json();
+        console.error("Error: ", errorData);
+        throw new Error(errorData || "Failed to roll dice");
+      }
+
       const data = await res.json();
       setValue(data);
       console.log(`${name} rolled a ${data}`);

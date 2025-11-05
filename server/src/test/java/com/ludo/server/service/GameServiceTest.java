@@ -40,7 +40,7 @@ class GameServiceTest {
     @Test
     void rollDice_ShouldThrowException_IfGameNotStarted() {
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            gameService.rollDice();
+            gameService.rollDice("somePlayerId");
         });
 
         assertEquals("Game has not been started yet!", exception.getMessage());
@@ -49,7 +49,9 @@ class GameServiceTest {
     @Test
     void rollDice_ShouldReturnValueBetween1And6_WhenGameStarted() {
         gameService.startNewGame();
-        int value = gameService.rollDice();
+        Game game = gameService.startNewGame();
+        Player current = game.getPlayers().get(game.getCurrentTurn());
+        int value = gameService.rollDice(current.getPlayerId());
 
         assertTrue(value >= 1 && value <= 6, "Dice value should be between 1 and 6.");
     }

@@ -64,7 +64,10 @@ public class Token {
      */
     public int getAbsolutePosition(int startOffset) {
         if(position == -1 || isFinished) return -1;
-        return (startOffset + position) % 56;
+        if(position > 51) {
+            return 100 + position; // Give Unique Position ID to cells > 51 to avoid collisions
+        }
+        return (startOffset + position) % 52;
     }
 
     // Getters and setters

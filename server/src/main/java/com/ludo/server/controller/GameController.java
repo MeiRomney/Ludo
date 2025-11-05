@@ -30,8 +30,8 @@ public class GameController {
     }
 
     @GetMapping("/roll")
-    public int rollDice() {
-        return gameService.rollDice();
+    public int rollDice(@RequestParam String playerId) {
+        return gameService.rollDice(playerId);
     }
 
     @GetMapping("/winner")
