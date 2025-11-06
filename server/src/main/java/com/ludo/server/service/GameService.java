@@ -177,7 +177,7 @@ public class GameService {
 
                 for(var opponentToken: p.getTokens()) {
                     int opponentPos = opponentToken.getAbsolutePosition(p.getStartOffset());
-                    if(opponentPos == newPos) {
+                    if(opponentPos == newPos && opponentToken.getPosition() < 51 && token.getPosition() < 51) {
                         opponentToken.resetPosition(); // Sends back home
                         System.out.println("💥 " + current.getName() + " captured " + p.getName() + "'s token!");
                     }
@@ -191,11 +191,21 @@ public class GameService {
             p.getTokens().forEach(t -> System.out.println(p.getColor() + " token " + t.getTokenId() + " -> " + t.getPosition()));
         }
 
-        // Check if player won
+        // Check if player finished all tokens
         Player winner = currentGame.checkWinner();
         if(winner != null) {
-            System.out.println("🏆 Winner found: " + winner.getName());
-            return;
+            System.out.println("🏆 " + winner.getName() + " has finished all their tokens!");
+
+            long unfinishedPlayers = currentGame.getPlayers().stream()
+                    .filter(p -> p.getTokens().stream().anyMatch(t -> !t.isFinished()))
+                    .count();
+
+            if(unfinishedPlayers == 1) {
+                System.out.println("🏁 Game Over! Only one player remains unfinished!");
+                return;
+            } else {
+                System.out.println("🎯 Game continues — " + unfinishedPlayers + " players still in play!");
+            }
         }
 
         // Extra turn logic if 6 is rolled, same players plays again
@@ -224,7 +234,17 @@ public class GameService {
      */
     public void nextTurn() {
         if(currentGame == null || currentGame.getPlayers() == null || currentGame.getPlayers().isEmpty()) return;
-        int next = (currentGame.getCurrentTurn() + 1) % currentGame.getPlayers().size();
+
+        int totalPlayers = currentGame.getPlayers().size();
+        int next = (currentGame.getCurrentTurn() + 1) % totalPlayers;
+
+        // Skip players who finished all tokens
+        int safety = 0;
+        while(currentGame.getPlayers().get(next).getTokens().stream().allMatch(t -> t.isFinished()) && safety < totalPlayers) {
+            next = (next + 1) % totalPlayers;
+            safety++;
+        }
+
         currentGame.setCurrentTurn(next);
         diceRolledThisTurn = false;
 

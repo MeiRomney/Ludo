@@ -109,15 +109,23 @@ public class Game {
      */
     public Player checkWinner() {
         if(players == null || players.isEmpty()) return null;
+
+        int finishedCount = 0;
+        Player lastFinishedPlayer = null;
+
         // Logic to check if a player has all tokens finished
         for(Player player: players) {
             boolean allFinished = player.getTokens().stream().allMatch(Token::isFinished);
             if(allFinished) {
-                System.out.println("Winner found: " + player.getName());
-                return player;
+                finishedCount++;
+                lastFinishedPlayer = player;
             }
         }
-        return null;
+
+        if(finishedCount == players.size() - 1) {
+            System.out.println("🏁 Game Over — only one player left unfinished!");
+        }
+        return lastFinishedPlayer;
     }
 
     // Getters and setters

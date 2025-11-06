@@ -15,6 +15,7 @@ public class Token {
     public Token() {
         this.tokenId = UUID.randomUUID().toString();
         this.position = -1;
+        this.isActive = false;
         this.isFinished = false;
     }
 
@@ -23,13 +24,15 @@ public class Token {
      * @param steps
      */
     public void move(int steps) {
+        if(isFinished) return;
         // Logic to move
-        if(isActive && !isFinished) {
+        if(isActive) {
             position += steps;
         }
-        if(position > 56) {
+        if(position >= 56) {
             position = 56;
             isFinished = true;
+            isActive = false;
         }
     }
 
@@ -63,9 +66,10 @@ public class Token {
      * @return absolute position
      */
     public int getAbsolutePosition(int startOffset) {
-        if(position == -1 || isFinished) return -1;
+        if(position == -1) return -1;
+
         if(position > 51) {
-            return 100 + position; // Give Unique Position ID to cells > 51 to avoid collisions
+            return 100 + position;
         }
         return (startOffset + position) % 52;
     }

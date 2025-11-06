@@ -132,7 +132,7 @@ const GamePlay = () => {
               <PlayerCard
                 color={player.color}
                 name={player.name}
-                pieces={player.tokens.map((t) => t.position)}
+                pieces={player.tokens}
                 active={isActive}
               />
               <Dice

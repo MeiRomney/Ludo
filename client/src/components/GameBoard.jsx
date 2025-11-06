@@ -69,6 +69,13 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
         yellow: [[11,11], [11,12], [12,11], [12,12]],
     }
 
+    const finishedCoordinate = {
+        red: [7, 6],
+        blue: [6, 7],
+        green: [8, 7],
+        yellow: [7, 8],
+    }
+
     const blueSafeZone = [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [1, 8],];
     const redSafeZone = [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [6, 1],];
     const yellowSafeZone = [[7, 9], [7, 10], [7, 11], [7, 12], [7, 13], [8, 13],];
@@ -144,6 +151,10 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
                 let pos;
                 if(token.position === -1) {
                     pos = homeCoordinate[player.color][index];
+                } else if(token.position === 56){
+                    const base = finishedCoordinate[player.color];
+                    const offset = getPieceOffset(index, player.tokens.length);
+                    pos = [base[0], base[1], offset];
                 } else {
                     pos = path[token.position];
                 }
@@ -183,20 +194,13 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
     const allPieces = getTokenPositions();
 
     const renderPieces = (row, col) => {
-        // const allPieces = [
-        //     ...redPieces.map((pos) => ({ color: "bg-red-500", pos })),
-        //     ...bluePieces.map((pos) => ({ color: "bg-blue-500", pos })),
-        //     ...greenPieces.map((pos) => ({ color: "bg-green-500", pos })),
-        //     ...yellowPieces.map((pos) => ({ color: "bg-yellow-500", pos })),
-        // ]
-
         // Find all pieces in this cell
         const piecesHere = allPieces.filter(
-            (p) => p.pos[0] === row && p.pos[1] === col
+            (p) => Array.isArray(p.pos) && p.pos[0] === row && p.pos[1] === col
         );
 
         return piecesHere.map((piece, i) => {
-            const [x, y] = getPieceOffset(i, piecesHere.length);
+            const [x, y] = piece.pos[2] || getPieceOffset(i, piecesHere.length);
             return (
                 <div
                 key={i}

@@ -1,3 +1,4 @@
+import { Home, Star } from 'lucide-react';
 import React from 'react'
 
 const PlayerCard = ({ color, name, pieces, active }) => {
@@ -18,17 +19,52 @@ const PlayerCard = ({ color, name, pieces, active }) => {
 
         {/* Pieces info */}
         <div className='flex flex-wrap gap-2'>
-            {pieces.map((p, i)=> (
+            {/* {pieces.map((t, i)=> (
                 <div key={i} className='flex items-center justify-center w-10 h-10 bg-gray-50 border rounded-lg'>
                     <div className='w-6 h-6 rounded-full shadow-sm' style={{backgroundColor: color}}></div>
                 </div>
-            ))}
+            ))} */}
+            {pieces.map((t, i) => {
+                const { position, finished } = t;
+
+                let bg = "bg-gray-50 border-gray-300";
+                let icon = null;
+                let innerColor = color;
+
+                if(finished) {
+                    bg = "bg-yellow-50 border-yellow-400";
+                    icon = <Star size={16} className='text-yellow-600'/>;
+                } else if(position === -1) {
+                    bg = "bg-gray-100 border-gray-300";
+                    icon = <Home size={16} className='text-gray-500'/>;
+                } else if(position >= 51) {
+                    bg = "bg-amber-50 border-amber-400";
+                }
+
+                return (
+                    <div
+                        key={i}
+                        className={`flex items-center justify-center w-10 h-10 border rounded-lg ${bg}`}
+                    >
+                        {icon ? (
+                            icon
+                        ) : (
+                            <div
+                                className='w-6 h-6 rounded-full shadow-sm'
+                                style={{ backgroundColor: innerColor }}
+                            ></div>
+                        )}
+                    </div>
+                );
+            })}
         </div>
 
         {/* Stats */}
         <div className='flex justify-between text-xs text-gray-500'>
-            <span>Total Pieces</span>
-            <span className='font-semibold text-gray-700'>{pieces.length}</span>
+            <span>Active</span>
+            <span className='font-semibold text-gray-700'>
+                {pieces.filter((t) => t.position > -1 && !t.finished).length}
+            </span>
         </div>
     </div>
   )
