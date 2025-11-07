@@ -27,6 +27,29 @@ const GamePlay = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const checkWinner = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/game/winner");
+        if(!res.ok) return;
+
+        const winner = await res.json();
+        if(winner && winner.name) {
+          console.log("🏆 Winner found:", winner.name);
+          // Store winner info temporarily
+          localStorage.setItem("Winner", JSON.stringify(winner));
+          navigate("/results");
+        }
+      } catch (err) {
+        console.error("Error checking winner:", err);
+      }
+    };
+
+    // Check every 2 seconds
+    const interval = setInterval(checkWinner, 2000);
+    return () => clearInterval(interval);
+  }, [navigate])
+
   const pause = ()=> {
     console.log("pause");
   }

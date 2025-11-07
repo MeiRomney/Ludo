@@ -1,9 +1,14 @@
 import { Star } from 'lucide-react';
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
 
     const [selectedToken, setSelectedToken] = useState(null);
+    const [animatedPositions, setAnimatedPositions] = useState({});
+    
+    // Keep previous players snapshot to detect changes
+    const prevPlayersRef = useRef();
+    const timersRef = useRef({});
 
     const redPath = [
         [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
@@ -123,17 +128,114 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
         }
     }
 
-    const handleTokenClick = (playerColor, tokenId) => {     
-        // Only allow clicking current player's tokens
-        if(currentPlayer?.color != playerColor) return;
-        setSelectedToken(tokenId);
+    // ---Animation---
+    const getPieceOffset = (index, total) => {
+        const offsetAmount = 4;
+        const positions = [
+            [-offsetAmount, -offsetAmount],
+            [offsetAmount, -offsetAmount],
+            [-offsetAmount, offsetAmount],
+            [offsetAmount, offsetAmount],
+        ];
+        return positions[index % positions.length];
+    }
 
-        // Notify parent which token was selected
-        if(onMove) {
-            onMove({playerColor, tokenId });
-            setTimeout(() => setSelectedToken(null), 500);
+    // Start animation for a token from `fromIndex` to `toIndex` (both can be -1 or 0..56)
+    const startTokenAnimation = (tokenId, playerColor, fromIndex, toIndex) => {
+        // Clear existing timer for token
+        if(timersRef.current[tokenId]) {
+            clearInterval(timersRef.current[tokenId]);
+            delete timersRef.current[tokenId];
         }
-    };
+
+        const path = getPathByColor(playerColor);
+
+        // For animation we only animate indices along the path (0..55) and treat -1 and 56 specially
+        const clampToPathIndex = (idx) => {
+            if(idx === -1) return -1;
+            if(idx >= 0 && idx <= 55) return idx;
+            if(idx === 56) return 56;
+            return -1;
+        }
+
+        const start = clampToPathIndex(fromIndex);
+        const end = clampToPathIndex(toIndex);
+
+        // If start and end are the same, just set directly
+        if(start === end) {
+            setAnimatedPositions(prev => ({...prev, [tokenId]: end}));
+            return;
+        }
+
+        // Determine direction (forward or backward)
+        const step = start < end ? 1 : -1;
+        let current = start;
+
+        // First set initial displayed value
+        setAnimatedPositions(prev => ({...prev, [tokenId]: current}));
+
+        const speed = 180;
+
+        timersRef.current[tokenId] = setInterval(() => {
+            // Moves one step
+            if(current === 56) { // Already at finished stop
+                clearInterval(timersRef.current[tokenId]);
+                delete timersRef.current[tokenId];
+                return;
+            }
+
+            current = current + step;
+            setAnimatedPositions(prev => ({...prev, [tokenId]: current}));
+
+            // If we've reached (or passed) the end -> stop
+            if((step === 1 && current >= end) || (step === -1 && current <= end)) {
+                clearInterval(timersRef.current[tokenId]);
+                delete timersRef.current[tokenId];
+            }
+        }, speed);
+    }
+
+    // On players prop change, detect moved tokens and animate them
+    useEffect(() => {
+        const prev = prevPlayersRef.current;
+        if(prev) {
+            // Build quick lookup: tokenId -> position and playerColor
+            const prevLookup = {};
+            prev.forEach(p => p.tokens?.forEach(t => prevLookup[t.tokenId] = { pos: t.position, color: p.color }));
+            const currLookup = {};
+            players.forEach(p => p.tokens?.forEach(t => currLookup[t.tokenId] = { pos: t.position, color: p.color }));
+
+            // Compare
+            Object.keys(currLookup).forEach(tokenId => {
+                const prevEntry = prevLookup[tokenId];
+                const currEntry = currLookup[tokenId];
+                if(!prevEntry) {
+                    // new Token (unlikely) -> set displayed directly
+                    setAnimatedPositions(prev => ({...prev, [tokenId]: currEntry.pos}));
+                } else if(prevEntry.pos != currEntry.pos) {
+                    // animate
+                    startTokenAnimation(tokenId, currEntry.color, prevEntry.pos, currEntry.pos);
+                }
+            });
+        } else {
+            // first render -> set displayed positions to actual
+            const initial = {};
+            players.forEach(p => p.tokens?.forEach(t => { initial[t.tokenId] = t.position}));
+            setAnimatedPositions(initial);
+        }
+
+        prevPlayersRef.current = players;
+
+        // Clean up when players change quickly: (We don't clear timers here because we want animation to continue)
+    }, [players]);
+
+    // Clean up timers on unmount
+    useEffect(() => {
+        return () => {
+            Object.values(timersRef.current).forEach(id => clearInterval(id));
+            timersRef.current = {};
+        }
+    }, [])
 
     const getTokenPositions = () => {
         const tokens = [];
@@ -148,15 +250,17 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             }[player.color];
 
             player.tokens?.forEach((token, index) => {
+                const displayedPos = animatedPositions[token.tokenId] ?? token.position;
+
                 let pos;
-                if(token.position === -1) {
+                if(displayedPos === -1) {
                     pos = homeCoordinate[player.color][index];
-                } else if(token.position === 56){
+                } else if(displayedPos === 56){
                     const base = finishedCoordinate[player.color];
                     const offset = getPieceOffset(index, player.tokens.length);
                     pos = [base[0], base[1], offset];
                 } else {
-                    pos = path[token.position];
+                    pos = path[displayedPos];
                 }
 
                 tokens.push({ color: colorClass, pos, playerColor: player.color, tokenId: token.tokenId });
@@ -164,17 +268,6 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
         });
         return tokens;
     };
-
-    const getPieceOffset = (index, total) => {
-        const offsetAmount = 4;
-        const positions = [
-            [-offsetAmount, -offsetAmount],
-            [offsetAmount, -offsetAmount],
-            [-offsetAmount, offsetAmount],
-            [offsetAmount, offsetAmount],
-        ];
-        return positions[index % positions.length];
-    }
 
     const getMovableTokenIds = () => {
         if(!currentPlayer || !pendingRoll ) return [];
@@ -190,8 +283,20 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             .map(t => t.tokenId);
     }
 
-    const movableTokenIds = getMovableTokenIds();
+    const handleTokenClick = (playerColor, tokenId) => {     
+        // Only allow clicking current player's tokens
+        if(currentPlayer?.color != playerColor) return;
+        setSelectedToken(tokenId);
+
+        // Notify parent which token was selected
+        if(onMove) {
+            onMove({playerColor, tokenId });
+            setTimeout(() => setSelectedToken(null), 500);
+        }
+    };
+
     const allPieces = getTokenPositions();
+    const movableTokenIds = getMovableTokenIds();
 
     const renderPieces = (row, col) => {
         // Find all pieces in this cell
