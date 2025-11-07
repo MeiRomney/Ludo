@@ -2,8 +2,15 @@ package com.ludo.server.controller;
 
 import com.ludo.server.model.Game;
 import com.ludo.server.model.Player;
+import com.ludo.server.model.Results;
+import com.ludo.server.model.Token;
 import com.ludo.server.service.GameService;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/game")
@@ -42,5 +49,16 @@ public class GameController {
     @GetMapping("/state")
     public Game getCurrentGame() {
         return gameService.getCurrentGame();
+    }
+
+    @GetMapping("/results")
+    public Results getResults() {
+        Game current = gameService.getCurrentGame();
+        if(current == null) {
+            return new Results(null, List.of());
+        }
+
+        gameService.checkWinner();
+        return gameService.buildResults(current);
     }
 }

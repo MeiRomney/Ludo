@@ -110,20 +110,35 @@ public class Game {
     public Player checkWinner() {
         if(players == null || players.isEmpty()) return null;
 
-        int finishedCount = 0;
+        int totalPlayers = players.size();
+        int finishedCount = (int) players.stream()
+                .filter(p -> p.getFinishPosition() != null)
+                .count();
         Player lastFinishedPlayer = null;
 
         // Logic to check if a player has all tokens finished
         for(Player player: players) {
-            boolean allFinished = player.getTokens().stream().allMatch(Token::isFinished);
-            if(allFinished) {
-                finishedCount++;
-                lastFinishedPlayer = player;
+            if(player.getFinishPosition() == null){
+                boolean allFinished = player.getTokens().stream().allMatch(Token::isFinished);
+                if(allFinished) {
+                    finishedCount++;
+                    player.setFinishPosition(finishedCount);
+                    lastFinishedPlayer = player;
+                    System.out.println("🏁 " + player.getName() + " finished in position " + finishedCount);
+                }
             }
         }
 
+        // Game over condition (1 player left)
         if(finishedCount == players.size() - 1) {
             System.out.println("🏁 Game Over — only one player left unfinished!");
+            // Assign last position to the remaining player
+            for(Player p: players) {
+                if(p.getFinishPosition() == null) {
+                    p.setFinishPosition(totalPlayers);
+                    System.out.println("😅 " + p.getName() + " finished last (" + totalPlayers + ")");
+                }
+            }
         }
         return lastFinishedPlayer;
     }

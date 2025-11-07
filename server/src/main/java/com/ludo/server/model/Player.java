@@ -14,6 +14,7 @@ public class Player {
     private List<Token> tokens;
     private int score;
     private int startOffset;
+    private Integer finishPosition;
 
     public Player() {
         this.tokens = new ArrayList<>();
@@ -146,5 +147,12 @@ public class Player {
     }
     public void setStartOffset(int startOffset) {
         this.startOffset = startOffset;
+    }
+
+    public Integer getFinishPosition() {
+        return finishPosition;
+    }
+    public void setFinishPosition(Integer finishPosition) {
+        this.finishPosition = finishPosition;
     }
 }

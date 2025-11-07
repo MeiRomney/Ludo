@@ -28,16 +28,22 @@ const GamePlay = () => {
   }, []);
 
   useEffect(() => {
-    const checkWinner = async () => {
+    const checkGameOver = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/game/winner");
+        const res = await fetch("http://localhost:8080/api/game/state");
         if(!res.ok) return;
 
-        const winner = await res.json();
-        if(winner && winner.name) {
-          console.log("🏆 Winner found:", winner.name);
-          // Store winner info temporarily
-          localStorage.setItem("Winner", JSON.stringify(winner));
+        const gameState = await res.json();
+        if(!gameState || !gameState.players) return;
+
+        // Count how many players have finished all four tokens
+        const finishedPlayers = gameState.players.filter(
+          p => p.tokens.every(t => t.finished)
+        );
+
+        if(finishedPlayers.length >= gameState.players.length - 1) {
+          console.log("🏁 Game Over! Navigating to results...");
+          localStorage.setItem("FinalGame", JSON.stringify(gameState));
           navigate("/results");
         }
       } catch (err) {
@@ -46,7 +52,7 @@ const GamePlay = () => {
     };
 
     // Check every 2 seconds
-    const interval = setInterval(checkWinner, 2000);
+    const interval = setInterval(checkGameOver, 2000);
     return () => clearInterval(interval);
   }, [navigate])
 

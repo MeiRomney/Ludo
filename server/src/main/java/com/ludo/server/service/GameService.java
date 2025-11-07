@@ -1,14 +1,10 @@
 package com.ludo.server.service;
 
-import com.ludo.server.model.Board;
-import com.ludo.server.model.Game;
-import com.ludo.server.model.Player;
+import com.ludo.server.model.*;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class GameService {
@@ -250,6 +246,41 @@ public class GameService {
 
         Player nextPlayer = getCurrentPlayer();
         System.out.println("➡️ Next turn: " + nextPlayer.getName());
+    }
+
+    public Results buildResults(Game current) {
+        List<PlayerResult> scoreboard = current.getPlayers().stream()
+                .map(player -> {
+                    long finished = player.getTokens().stream().filter(Token::isFinished).count();
+                    long atHome = player.getTokens().stream().filter(t -> !t.isActive() && !t.isFinished()).count();
+                    long inPlay = 4 - finished - atHome;
+
+                    return new PlayerResult(
+                            player.getName(),
+                            player.getColor(),
+                            finished,
+                            inPlay,
+                            atHome,
+                            player.getFinishPosition()
+                    );
+                })
+                .sorted(
+                        Comparator
+                                .comparing(
+                                        (PlayerResult p) -> p.getFinishPosition() == null ? Integer.MAX_VALUE : p.getFinishPosition()
+                                )
+                                .thenComparing(
+                                        Comparator.comparingLong(PlayerResult::getFinished).reversed()
+                                )
+                )
+                .collect(Collectors.toList());
+        String winner = current.getPlayers().stream()
+                .filter(p -> p.getFinishPosition() != null && p.getFinishPosition() == 1)
+                .map(Player::getName)
+                .findFirst()
+                .orElse(null);
+
+        return new Results(winner, scoreboard);
     }
 
     private Player getCurrentPlayer() {

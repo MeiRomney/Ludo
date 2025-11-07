@@ -141,7 +141,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
     }
 
     // Start animation for a token from `fromIndex` to `toIndex` (both can be -1 or 0..56)
-    const startTokenAnimation = (tokenId, playerColor, fromIndex, toIndex) => {
+    const startTokenAnimation = (tokenId, playerColor, fromIndex, toIndex, onComplete) => {
         // Clear existing timer for token
         if(timersRef.current[tokenId]) {
             clearInterval(timersRef.current[tokenId]);
@@ -164,6 +164,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
         // If start and end are the same, just set directly
         if(start === end) {
             setAnimatedPositions(prev => ({...prev, [tokenId]: end}));
+            onComplete?.();
             return;
         }
 
@@ -181,6 +182,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             if(current === 56) { // Already at finished stop
                 clearInterval(timersRef.current[tokenId]);
                 delete timersRef.current[tokenId];
+                onComplete?.();
                 return;
             }
 
@@ -191,6 +193,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             if((step === 1 && current >= end) || (step === -1 && current <= end)) {
                 clearInterval(timersRef.current[tokenId]);
                 delete timersRef.current[tokenId];
+                onComplete?.();
             }
         }, speed);
     }
@@ -198,6 +201,8 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
     // On players prop change, detect moved tokens and animate them
     useEffect(() => {
         const prev = prevPlayersRef.current;
+        const movedTokens = [];
+        const capturedTokens = [];
         if(prev) {
             // Build quick lookup: tokenId -> position and playerColor
             const prevLookup = {};
@@ -214,9 +219,25 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
                     setAnimatedPositions(prev => ({...prev, [tokenId]: currEntry.pos}));
                 } else if(prevEntry.pos != currEntry.pos) {
                     // animate
-                    startTokenAnimation(tokenId, currEntry.color, prevEntry.pos, currEntry.pos);
+                    //startTokenAnimation(tokenId, currEntry.color, prevEntry.pos, currEntry.pos);
+                    if(currEntry.pos > prevEntry.pos) {
+                        movedTokens.push({ tokenId, color: currEntry.color, from: prevEntry.pos, to: currEntry.pos });
+                    } else if(currEntry.pos === -1) {
+                        capturedTokens.push({ tokenId, color: currEntry.color, from: prevEntry.pos, to: -1 });
+                    }
                 }
             });
+
+            // Run all moved tokens first
+            movedTokens.forEach((moved) => {
+                startTokenAnimation(moved.tokenId, moved.color, moved.from, moved.to, () => {
+                    // After it finishes, then animate captured tokens
+                    capturedTokens.forEach((captured) => {
+                        startTokenAnimation(captured.tokenId, captured.color, captured.from, captured.to)
+                    });
+                });
+            });
+
         } else {
             // first render -> set displayed positions to actual
             const initial = {};

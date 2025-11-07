@@ -1,17 +1,41 @@
 import { Home, RefreshCw, Trophy } from 'lucide-react'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
 const Results = () => {
 
   const navigate = useNavigate();
+  const [results, setResults] = useState([]);
+  const [winner, setWinner] = useState(null);
 
-  const results = [
-    { position: 1, color: '#FFD93D', name: 'Yellow', finished: 4, inPlay: 0, atHome: 0 },
-    { position: 2, color: '#FF4C4C', name: 'Red', finished: 3, inPlay: 1, atHome: 0 },
-    { position: 3, color: '#4C6FFF', name: 'Blue', finished: 2, inPlay: 2, atHome: 0 },
-    { position: 4, color: '#28A745', name: 'Green', finished: 0, inPlay: 2, atHome: 2 },
-  ];
+  useEffect(() => {
+    fetch("http://localhost:8080/api/game/results")
+      .then(res => res.json())
+      .then(data => {
+        console.log("Results fetched: ", data);
+        if(data.scoreboard) {
+          setResults(
+            data.scoreboard.map((p, i) => ({
+              position: i + 1, 
+              color: 
+                p.color === "yellow"
+                ? '#FFD93D'
+                : p.color === "red"
+                ? '#FF4C4C'
+                : p.color === "blue"
+                ? '#4C6FFF'
+                : '#28A745',
+                name: p.name,
+                finished: p.finished,
+                inPlay: p.inPlay,
+                atHome: p.atHome,
+            }))
+          );
+          setWinner(data.winner);
+        }
+      })
+      .catch((err) => console.log("Error fetching results:", err));
+  }, []);
 
   return (
     <div className='w-full h-full bg-yellow-50 absolute flex flex-col justify-center items-center pt-15'>
@@ -20,10 +44,18 @@ const Results = () => {
           <Trophy className='w-20 h-20 text-white' />
         </div>
         <h1 className='text-3xl font-bold text-yellow-300 text-shadow-md'>Winner</h1>
-        <div className='w-full bg-white shadow-md rounded-3xl flex my-2 p-2'>
-          <div className={`w-6 h-6 bg-yellow-400 rounded-full`} ></div>
-          <h2>Yellow Player</h2>
-        </div>
+        {winner && (
+          <div className='w-full bg-white shadow-md rounded-3xl flex my-2 p-2 items-center gap-2'>
+            <div 
+              className={`w-6 h-6 rounded-full`}
+              style={{
+                backgroundColor:
+                  results.find((r) => r.name === winner)?.color || '#FFD93D',
+              }} ></div>
+            <h2>{winner}</h2>
+          </div>
+        )}
+        
       </div>
       <div className='w-1/2 rounded-2xl bg-white shadow-lg mx-auto flex flex-col p-7'>
         <h2 className='text-2xl text-gray-500'>Final Scoreboard</h2>
@@ -39,7 +71,13 @@ const Results = () => {
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gray-700 text-white rounded-full flex items-center justify-center shadow-md">
-                  {result.position === 1 ? '🥇' : result.position === 2 ? '🥈' : result.position === 3 ? '🥉' : result.position}
+                  {result.position === 1 
+                  ? '🥇' 
+                  : result.position === 2 
+                  ? '🥈' 
+                  : result.position === 3 
+                  ? '🥉' 
+                  : result.position}
                 </div>
                 <div className="w-10 h-10 rounded-full shadow-md" style={{ backgroundColor: result.color }}></div>
                 <span className="text-gray-800 min-w-[80px]">{result.name}</span>
