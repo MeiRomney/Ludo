@@ -1,8 +1,6 @@
 package com.ludo.server.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Represents a Ludo game session.
@@ -12,12 +10,14 @@ public class Game {
     private Board board;
     private List<Player> players;
     private int currentTurn;
+    private Map<String, Integer> lastDiceRolls;
 
     public Game() {
         this.gameId = UUID.randomUUID().toString();
         this.currentTurn = 0;
         this.board = new Board();
         this.players = new ArrayList<>();
+        this.lastDiceRolls = new HashMap<>();
     }
 
     /**
@@ -71,9 +71,13 @@ public class Game {
      * Roll the dice for the current player.
      * @return rolled value between 1 and 6
      */
-    public int rollDice() {
+    public int rollDiceForPlayer(Player current) {
         Dice dice = new Dice();
-        return dice.roll();
+        int value = dice.roll();
+
+        lastDiceRolls.put(current.getPlayerId(), value);
+
+        return value;
     }
 
     /**
@@ -171,5 +175,12 @@ public class Game {
     }
     public void setCurrentTurn(int currentTurn) {
         this.currentTurn = currentTurn;
+    }
+
+    public Map<String, Integer> getLastDiceRolls() {
+        return lastDiceRolls;
+    }
+    public void setLastDiceRolls(Map<String, Integer> lastDiceRolls) {
+        this.lastDiceRolls = lastDiceRolls;
     }
 }

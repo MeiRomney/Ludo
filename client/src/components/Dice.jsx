@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 
-const Dice = ({ name, player, onDiceRoll }) => {
+const Dice = ({ name, player, value, onDiceRoll }) => {
 
-  const [value, setValue] = useState(null);
   const [rolling, setRolling] = useState(false);
 
   const rollDice = async () => {
@@ -22,8 +21,6 @@ const Dice = ({ name, player, onDiceRoll }) => {
       }
 
       const data = await res.json();
-      setValue(data);
-      console.log(`${name} rolled a ${data}`);
 
       if(onDiceRoll) onDiceRoll(data);
     } catch(err) {
@@ -39,7 +36,7 @@ const Dice = ({ name, player, onDiceRoll }) => {
         <div className={`w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md flex items-center justify-center cursor-pointer ${
             rolling ? 'opacity-50' : 'hover:scale-105 transition'
           }`}
-          onClick={!rolling ? rollDice : undefined}
+          onClick={!rolling && !player.isBot ? rollDice : undefined}
         >
             {/* <div className="grid grid-cols-2 gap-2 p-2">
                 <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
@@ -48,7 +45,7 @@ const Dice = ({ name, player, onDiceRoll }) => {
                 <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
             </div> */}
             <div className='text-2xl font-bold text-gray-700'>
-              {value || '-'}
+              {value ?? '-'}
             </div>
         </div>
     </div>

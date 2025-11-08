@@ -15,6 +15,7 @@ public class Player {
     private int score;
     private int startOffset;
     private Integer finishPosition;
+    private boolean isBot;
 
     public Player() {
         this.tokens = new ArrayList<>();
@@ -154,5 +155,12 @@ public class Player {
     }
     public void setFinishPosition(Integer finishPosition) {
         this.finishPosition = finishPosition;
+    }
+
+    public boolean isBot() {
+        return isBot;
+    }
+    public void setBot(boolean isBot) {
+        this.isBot = isBot;
     }
 }

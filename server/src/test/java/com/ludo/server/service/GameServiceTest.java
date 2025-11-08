@@ -21,7 +21,7 @@ class GameServiceTest {
 
     @Test
     void startNewGame_ShouldInitializeGameWithFourPlayers() {
-        Game game = gameService.startNewGame();
+        Game game = gameService.startNewGame("TestPlayer");
 
         assertNotNull(game, "Game should not be null after starting a new game.");
         assertNotNull(game.getPlayers(), "Players list should not be null.");
@@ -48,8 +48,7 @@ class GameServiceTest {
 
     @Test
     void rollDice_ShouldReturnValueBetween1And6_WhenGameStarted() {
-        gameService.startNewGame();
-        Game game = gameService.startNewGame();
+        Game game = gameService.startNewGame("Tester");
         Player current = game.getPlayers().get(game.getCurrentTurn());
         int value = gameService.rollDice(current.getPlayerId());
 
@@ -58,14 +57,14 @@ class GameServiceTest {
 
     @Test
     void checkWinner_ShouldReturnNull_WhenNoWinnerYet() {
-        gameService.startNewGame();
+        gameService.startNewGame("Tester");
         Player winner = gameService.checkWinner();
         assertNull(winner, "No winner should be present at the start of the game.");
     }
 
     @Test
     void nextTurn_ShouldAdvanceTurnToNextPlayer() {
-        gameService.startNewGame();
+        gameService.startNewGame("Tester");
         Game game = gameService.getCurrentGame();
         int initialTurn = game.getCurrentTurn();
 
@@ -85,7 +84,7 @@ class GameServiceTest {
 
     @Test
     void moveToken_ShouldAdvanceTurnAfterMove() {
-        gameService.startNewGame();
+        gameService.startNewGame("Tester");
         Game game = gameService.getCurrentGame();
 
         Player currentPlayer = game.getPlayers().get(game.getCurrentTurn());
@@ -102,7 +101,7 @@ class GameServiceTest {
 
     @Test
     void getCurrentGame_ShouldReturnSameInstanceAfterStart() {
-        Game startedGame = gameService.startNewGame();
+        Game startedGame = gameService.startNewGame("Tester");
         Game retrievedGame = gameService.getCurrentGame();
 
         assertSame(startedGame, retrievedGame, "getCurrentGame() should return the same game instance.");

@@ -23,9 +23,9 @@ public class GameController {
     }
 
     @PostMapping("/start")
-    public Game startGame() {
+    public Game startGame(@RequestParam(required = false) String playerName) {
         System.out.println("🎯 /api/game/start endpoint hit!");
-        return gameService.startNewGame();
+        return gameService.startNewGame(playerName != null ? playerName : "You");
     }
 
     @PostMapping("/move")
