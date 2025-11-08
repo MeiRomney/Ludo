@@ -86,7 +86,7 @@ const Dice = ({ name, player, value, onDiceRoll }) => {
             {/* <div className='text-2xl font-bold text-gray-700'>
               {value ?? '-'}
             </div> */}
-            {displayValue && renderDots(displayValue)}
+            {!rolling && displayValue && renderDots(displayValue)}
         </div>
     </div>
   )

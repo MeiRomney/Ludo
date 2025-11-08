@@ -177,6 +177,20 @@ public class GameService {
 
             if (steps == 6) {
                 System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
+                // If it's a bot, trigger its turn automatically after a delay
+                if (current.isBot()) {
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            synchronized (GameService.this) {
+                                // Double check to ensure it's still this bot's turn
+                                if (getCurrentPlayer().getPlayerId().equals(current.getPlayerId())) {
+                                    handleBotTurn(current);
+                                }
+                            }
+                        }
+                    }, 1000 + new Random().nextInt(1000));
+                }
             } else {
                 nextTurn();
             }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import PlayerCard from '../components/PlayerCard';
 import Dice from '../components/Dice';
 import GameBoard from '../components/GameBoard';
+import toast, { Toaster } from 'react-hot-toast';
 
 const GamePlay = () => {
 
@@ -39,6 +40,7 @@ const GamePlay = () => {
       // Check for game over immediately
       const finishedPlayers = data.players.filter(p => p.tokens.every(t => t.finished));
       if(finishedPlayers.length >= data.players.length - 1) {
+        toast.success("🏁 Game Over!");
         console.log("🏁 Game Over! Navigating to results...");
         localStorage.setItem("FinalGame", JSON.stringify(data));
         navigate("/results");
@@ -82,12 +84,13 @@ const GamePlay = () => {
   const pause = ()=> {
     setPaused(prev => !prev);
     console.log(`Game is now ${paused ? 'paused' : 'resumed'}`);
+    toast[paused ? "success" : "warning"](`Game ${paused ? 'resumed' : 'paused'}`);
   }
 
   // Player rolls dice, just store the result, don't move yet
   const handleDiceRoll = async(player, value) => {
     if(paused) {
-      alert("Game is paused!");
+      toast.error("Game is paused!");
       return;
     }
 
@@ -102,18 +105,18 @@ const GamePlay = () => {
   // When token clicked on board
   const handleTokenSelect = async ({playerColor, tokenId}) => {
     if(paused) {
-      alert("Game is paused!");
+      toast.error("Game is paused!");
       return;
     }
 
     if(!game || !pendingRoll) {
-      alert("Please roll the dice first!");
+      toast.error("Please roll the dice first!");
       return;
     }
 
     const player = game.players.find((p) => p.color === playerColor);
     if(!player || player.playerId !== roller?.playerId) {
-      alert("Not your turn!");
+      toast.error("Not your turn!");
       return;
     }
 
@@ -140,6 +143,7 @@ const GamePlay = () => {
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+      <Toaster position='top-center'/>
       {/* Navigation bar */}
       <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
         <div className="flex items-center gap-3">
