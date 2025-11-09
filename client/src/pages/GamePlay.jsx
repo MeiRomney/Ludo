@@ -93,10 +93,20 @@ const GamePlay = () => {
     return () => clearInterval(interval);
   }, [navigate, paused]);
 
-  const pause = ()=> {
-    setPaused(prev => !prev);
-    console.log(`Game is now ${paused ? 'paused' : 'resumed'}`);
-    toast[paused ? "success" : "warning"](`Game ${paused ? 'resumed' : 'paused'}`);
+  const pause = async ()=> {
+    try {
+      const res = await fetch(`http://localhost:8080/api/game/${paused ? 'resume' : 'pause'}`, {
+        method: "POST"
+      });
+      if(res.ok){
+        setPaused(prev => !prev);
+        toast[paused ? "success" : "warning"](`Game ${paused ? 'resumed' : 'paused'}`);
+      }
+      
+    } catch (err) {
+      toast.error("Game paused", err);
+    }
+    
   }
 
   // Player rolls dice, just store the result, don't move yet

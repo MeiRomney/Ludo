@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 @Service
 public class GameService {
     private Game currentGame;
+    private boolean paused = false;
     private int lastRollValue = 0;
     private boolean diceRolledThisTurn = false;
 
@@ -81,7 +82,7 @@ public class GameService {
 
         System.out.println("✅ Game started successfully!");
         Player firstPlayer = getCurrentPlayer();
-        if(firstPlayer.isBot()) {
+        if (firstPlayer.isBot()) {
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -115,6 +116,10 @@ public class GameService {
      * @return the value of the rolled dice
      */
     public synchronized int rollDice(String playerId) {
+        if(paused) {
+            throw new IllegalStateException("⚠️ Game is currently paused!");
+        }
+
         if (currentGame == null) {
             throw new IllegalStateException("Game has not been started yet!");
         }
@@ -178,6 +183,10 @@ public class GameService {
      * @param steps
      */
     public void moveToken(String playerId, String tokenId, int steps) {
+        if(paused) {
+            throw new IllegalStateException("⚠️ Game is currently paused!");
+        }
+
         if (currentGame == null) {
             throw new IllegalStateException("Game has not been started yet!");
         }
@@ -355,6 +364,7 @@ public class GameService {
      * Simple bot logic: auto roll and auto move
      */
     private void handleBotTurn(Player bot) {
+        if(paused) return;
         try {
             System.out.println("🤖 " + bot.getName() + " is thinking...");
             Thread.sleep(300);
@@ -415,5 +425,37 @@ public class GameService {
 
     public Game getCurrentGame() {
         return currentGame;
+    }
+
+    public synchronized boolean isPaused() {
+        return paused;
+    }
+    public synchronized void setPaused(boolean pause) {
+        this.paused = pause;
+        System.out.println(pause ? "⏸️ Game paused" : "▶️ Game resumed");
+
+        // Safety check
+        if(currentGame == null || currentGame.getPlayers() == null) {
+            System.out.println("⚠️ No active game to pause/resume.");
+            return;
+        }
+
+        if(!pause) {
+            // Resume logic: check if it's bot turn
+            Player current = getCurrentPlayer();
+            if(current != null && current.isBot()) {
+                System.out.println("🤖 Resuming bot turn for " + current.getName());
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        synchronized (GameService.this) {
+                            if(getCurrentPlayer().getPlayerId().equals(current.getPlayerId()) && !paused) {
+                                handleBotTurn(current);
+                            }
+                        }
+                    }
+                }, 1000);
+            }
+        }
     }
 }

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 const Setting = () => {
 
   const navigate = useNavigate();
-  const [selectedColor, setSelectedColor] = useState('blue');
+  const [selectedColor, setSelectedColor] = useState('red');
   const [selectedType, setSelectedType] = useState('fourPlayers');
 
   const types = [
@@ -13,8 +13,8 @@ const Setting = () => {
     { name: 'twoPlayers', label: '2 Players' },
   ]
   const colors = [
-    { name: 'Blue', value: 'bg-blue-500', hover: 'hover:bg-blue-600' },
     { name: 'Red', value: 'bg-red-500', hover: 'hover:bg-red-600' },
+    { name: 'Blue', value: 'bg-blue-500', hover: 'hover:bg-blue-600' },
     { name: 'Green', value: 'bg-green-500', hover: 'hover:bg-green-600' },
     { name: 'Yellow', value: 'bg-yellow-500', hover: 'hover:bg-yellow-600' },
   ]

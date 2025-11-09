@@ -5,6 +5,7 @@ import com.ludo.server.model.Player;
 import com.ludo.server.model.Results;
 import com.ludo.server.model.Token;
 import com.ludo.server.service.GameService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Comparator;
@@ -34,6 +35,23 @@ public class GameController {
                           @RequestParam int steps) {
         gameService.moveToken(playerId, tokenId, steps);
         return gameService.getCurrentGame();
+    }
+
+    @PostMapping("/pause")
+    public ResponseEntity<String> pauseGame() {
+        gameService.setPaused(true);
+        return ResponseEntity.ok("Game paused");
+    }
+
+    @PostMapping("/resume")
+    public ResponseEntity<String> resumeGame() {
+        gameService.setPaused(false);
+        return ResponseEntity.ok("Game resumed");
+    }
+
+    @GetMapping("/paused")
+    public ResponseEntity<Boolean> isPaused() {
+        return ResponseEntity.ok(gameService.isPaused());
     }
 
     @GetMapping("/roll")
