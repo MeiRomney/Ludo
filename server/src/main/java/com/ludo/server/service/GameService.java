@@ -80,6 +80,21 @@ public class GameService {
         currentGame.startGame();
 
         System.out.println("✅ Game started successfully!");
+        Player firstPlayer = getCurrentPlayer();
+        if(firstPlayer.isBot()) {
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    synchronized (GameService.this) {
+                        // Double check to ensure it's still this bot's turn
+                        if (getCurrentPlayer().getPlayerId().equals(firstPlayer.getPlayerId())) {
+                            handleBotTurn(firstPlayer);
+                        }
+                    }
+                }
+            }, 1000 + new Random().nextInt(1000));
+        }
+
         return currentGame;
     }
 
@@ -133,6 +148,19 @@ public class GameService {
                 nextTurn();
             } else {
                 System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
+                if (current.isBot()) {
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            synchronized (GameService.this) {
+                                // Double check to ensure it's still this bot's turn
+                                if (getCurrentPlayer().getPlayerId().equals(current.getPlayerId())) {
+                                    handleBotTurn(current);
+                                }
+                            }
+                        }
+                    }, 1000 + new Random().nextInt(1000));
+                }
             }
             lastRollValue = 0;
             diceRolledThisTurn = false;

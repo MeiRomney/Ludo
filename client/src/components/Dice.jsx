@@ -1,19 +1,51 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
-const Dice = ({ name, player, value, onDiceRoll }) => {
+const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
 
   const [rolling, setRolling] = useState(false);
-  const [displayValue, setDisplayValue] = useState(value);
+  const [displayValue, setDisplayValue] = useState(diceRoll?.value?? null);
+  const rollSound = useRef(null);
 
   useEffect(() => {
-    if(value != null && value !== displayValue) {
-      setRolling(true);
-      setTimeout(() => {
-        setDisplayValue(value);
-        setRolling(false);
-      }, 600);
+    rollSound.current = new Audio("/sounds/diceRoll.mp3");
+    rollSound.current.volume = 0.6;
+  }, []);
+
+  // useEffect(() => {
+  //   if(value != null && value !== displayValue) {
+  //     // Play sound when bot rolls
+  //     if(player?.isBot && rollSound.current) {
+  //       const sound = rollSound.current.cloneNode();
+  //       sound.play().catch(() => {})
+  //     }
+  //     setRolling(true);
+  //     setTimeout(() => {
+  //       setDisplayValue(value);
+  //       setRolling(false);
+  //     }, 600);
+  //   }
+  // }, [value, rollCount])
+
+  // Props: value = dice value, rollCount = increments each roll
+  useEffect(() => {
+    if (!diceRoll) return;
+    
+    setRolling(true);
+    setDisplayValue(null);
+    
+    // Play sound for both bot and human
+    if (rollSound.current) {
+      const sound = rollSound.current.cloneNode();
+      sound.play().catch(() => {});
     }
-  }, [value])
+
+    const timer = setTimeout(() => {
+      setDisplayValue(diceRoll.value);
+      setRolling(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [diceRoll?.rollId]); // or [rollCount] if you have a separate roll tracker
+
 
   const rollDice = async () => {
     if(!player || !player.playerId) {
@@ -23,6 +55,11 @@ const Dice = ({ name, player, value, onDiceRoll }) => {
 
     setRolling(true);
     try {
+      if(rollSound.current) {
+        const sound = rollSound.current.cloneNode();
+        sound.play().catch(() => {});
+      }
+
       // Show a fake quick animation before actual fetch result
       setDisplayValue(null);
 

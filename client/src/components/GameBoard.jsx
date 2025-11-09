@@ -107,6 +107,13 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
     const greenHome = { rowStart: 9, colStart: 0, color: "bg-green-200", border: "border-green-400" };
     const yellowHome = { rowStart: 9, colStart: 9, color: "bg-yellow-200", border: "border-yellow-400" };
 
+    const hopSound = useRef(null);
+
+    useEffect(() => {
+        hopSound.current = new Audio("/sounds/hop.mp3");
+        hopSound.current.volume = 0.5;
+    }, []);
+
     // helper function
     const match = (arr, row, col) => arr.some(([r, c]) => r === row && c === col);
 
@@ -188,6 +195,12 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
 
             current = current + step;
             setAnimatedPositions(prev => ({...prev, [tokenId]: current}));
+
+            // Play hop sound
+            if(hopSound.current) {
+                const sound = hopSound.current.cloneNode();
+                sound.play().catch(() => {});
+            }
 
             // If we've reached (or passed) the end -> stop
             if((step === 1 && current >= end) || (step === -1 && current <= end)) {

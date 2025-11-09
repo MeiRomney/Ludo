@@ -14,6 +14,7 @@ const GamePlay = () => {
   const [roller, setRoller] = useState(null); // which player rolled last
   const [token, setSelectedToken] = useState(null);
   const [paused, setPaused] = useState(false);
+  const [rollCount, setRollCount] = useState(0);
 
   useEffect(() => {
     if(paused) return;
@@ -35,6 +36,17 @@ const GamePlay = () => {
       const res = await fetch("http://localhost:8080/api/game/state");
       if(!res.ok) return;
       const data = await res.json();
+
+      if (game) {
+      for (let playerId in data.lastDiceRolls) {
+        const lastRoll = game.lastDiceRolls?.[playerId]?.rollId;
+        const newRoll = data.lastDiceRolls[playerId].rollId;
+        if (lastRoll !== newRoll) {
+          setRollCount(prev => prev + 1);
+        }
+      }
+    }
+
       setGame(data);
 
       // Check for game over immediately
@@ -88,16 +100,17 @@ const GamePlay = () => {
   }
 
   // Player rolls dice, just store the result, don't move yet
-  const handleDiceRoll = async(player, value) => {
+  const handleDiceRoll = async(player, dice) => {
     if(paused) {
       toast.error("Game is paused!");
       return;
     }
 
-    if(!player || value == null) return;
-    console.log(`🎲 ${player.name} rolled ${value}`);
-    setPendingRoll(value);
-    setRoller(player); 
+    if(!player || !dice) return;
+    console.log(`🎲 ${player.name} rolled ${dice.value} (rollId: ${dice.rollId})`);
+    setPendingRoll(dice.value);
+    setRoller(player);
+    setRollCount(prev => prev + 1);
 
     await fetchGameState();
   };
@@ -212,8 +225,8 @@ const GamePlay = () => {
               <Dice
                 name={player.name}
                 player={player}
-                value={game?.lastDiceRolls?.[player.playerId] ?? null}
-                onDiceRoll={player.isBot ? undefined : (value) => handleDiceRoll(player, value)}
+                diceRoll={game?.lastDiceRolls?.[player.playerId] ?? null}
+                onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
               />
               {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
                 <div className='text-sm text-gray-600'>

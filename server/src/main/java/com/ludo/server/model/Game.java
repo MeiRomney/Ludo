@@ -10,7 +10,7 @@ public class Game {
     private Board board;
     private List<Player> players;
     private int currentTurn;
-    private Map<String, Integer> lastDiceRolls;
+    private Map<String, DiceRoll> lastDiceRolls;
 
     public Game() {
         this.gameId = UUID.randomUUID().toString();
@@ -74,10 +74,12 @@ public class Game {
     public int rollDiceForPlayer(Player current) {
         Dice dice = new Dice();
         int value = dice.roll();
+        String rollId = UUID.randomUUID().toString();
 
-        lastDiceRolls.put(current.getPlayerId(), value);
+        DiceRoll diceRoll = new DiceRoll(value, rollId);
+        lastDiceRolls.put(current.getPlayerId(), diceRoll);
 
-        return value;
+        return diceRoll.getValue();
     }
 
     /**
@@ -177,10 +179,10 @@ public class Game {
         this.currentTurn = currentTurn;
     }
 
-    public Map<String, Integer> getLastDiceRolls() {
+    public Map<String, DiceRoll> getLastDiceRolls() {
         return lastDiceRolls;
     }
-    public void setLastDiceRolls(Map<String, Integer> lastDiceRolls) {
+    public void setLastDiceRolls(Map<String, DiceRoll> lastDiceRolls) {
         this.lastDiceRolls = lastDiceRolls;
     }
 }
