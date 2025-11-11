@@ -1,6 +1,7 @@
 package com.ludo.server.service;
 
 import com.ludo.server.model.*;
+import com.ludo.server.repository.PlayerSettingRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -15,88 +16,101 @@ public class GameService {
 
     private static final Set<Integer> SAFE_CELLS = Set.of(0, 8, 13, 21, 26, 34, 39, 47);
 
+    private final PlayerSettingRepository playerSettingRepository;
+
+    public GameService(PlayerSettingRepository playerSettingRepository) {
+        this.playerSettingRepository = playerSettingRepository;
+    }
+
     /**
-     * Starts a new game with two default players
+     * Starts a new game
      *
      * @return the current game
      */
-    public Game startNewGame(String humanName) {
-        System.out.println("⚙️ Starting new game...");
+    public Game startNewGame(String email) {
+        System.out.println("⚙️ Starting new game for email: " + email);
+        try {
+            // Fetch user from database
+            var optional = playerSettingRepository.findByEmail(email);
+            if (optional.isEmpty()) {
+                System.out.println("❌ playerSettingRepository.findByEmail returned empty for: " + email);
+                throw new IllegalStateException("User not found with email: " + email);
+            }
+            PlayerSetting humanSetting = optional.get();
+            System.out.println("✅ Found PlayerSetting: " + humanSetting);
 
-        currentGame = new Game();
-//        currentGame.setGameId(UUID.randomUUID().toString());
-//        currentGame.setBoard(new Board());
-        // Create players
-        List<Player> players = new ArrayList<>();
+            // Defensive checks
+            if (humanSetting.getColor() == null) {
+                throw new IllegalStateException("User has no color set: " + humanSetting);
+            }
+            if (humanSetting.getName() == null) {
+                System.out.println("⚠️ name is null — will use color-based default");
+            }
 
-//        Player red = new Player();
-//        red.setPlayerId(UUID.randomUUID().toString());
-//        red.setName("Red Player");
-//        red.setColor("red");
-//        red.initializeTokens();
-//        red.setStartOffset(0);
-//
-//        Player blue = new Player();
-//        blue.setPlayerId(UUID.randomUUID().toString());
-//        blue.setName("Blue Player");
-//        blue.setColor("blue");
-//        blue.initializeTokens();
-//        blue.setStartOffset(13);
-//
-//        Player yellow = new Player();
-//        yellow.setPlayerId(UUID.randomUUID().toString());
-//        yellow.setName("Yellow Player");
-//        yellow.setColor("yellow");
-//        yellow.initializeTokens();
-//        yellow.setStartOffset(26);
-//
-//        Player green = new Player();
-//        green.setPlayerId(UUID.randomUUID().toString());
-//        green.setName("Green Player");
-//        green.setColor("green");
-//        green.initializeTokens();
-//        green.setStartOffset(39);
-//
-//        players.add(red);
-//        players.add(blue);
-//        players.add(yellow);
-//        players.add(green);
+            currentGame = new Game();
+            List<Player> players = new ArrayList<>();
 
-        // Human
-//        Player human = new Player();
-//        human.setPlayerId(UUID.randomUUID().toString());
-//        human.setName(humanName != null ? humanName : "You");
-//        human.setColor("red");
-//        human.initializeTokens();
-//        human.setStartOffset(0);
-//        players.add(human);
+            Player human = createHuman(humanSetting.getName(), humanSetting.getColor());
+            System.out.println("👤 Created human player: " + human.getName() + " color=" + human.getColor());
+            players.add(human);
 
-        // Bots
-        players.add(createBot("Red bot", "red", 0));
-        players.add(createBot("Blue bot", "blue", 13));
-        players.add(createBot("Yellow bot", "yellow", 26));
-        players.add(createBot("Green bot", "green", 39));
+            int gameType = Objects.equals(humanSetting.getGameType(), "fourPlayers") ? 4 : 2;
+            System.out.println("🏷️ gameType="+gameType + " from saved: " + humanSetting.getGameType());
 
-        currentGame.setPlayers(players);
-        currentGame.startGame();
-
-        System.out.println("✅ Game started successfully!");
-        Player firstPlayer = getCurrentPlayer();
-        if (firstPlayer.isBot()) {
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    synchronized (GameService.this) {
-                        // Double check to ensure it's still this bot's turn
-                        if (getCurrentPlayer().getPlayerId().equals(firstPlayer.getPlayerId())) {
-                            handleBotTurn(firstPlayer);
-                        }
+            if (gameType == 2) {
+                String botColor = getTwoPlayerBotColor(human.getColor());
+                players.add(createBot(botColor + " bot", botColor, getStartOffset(botColor)));
+            } else {
+                for (String color : List.of("red", "blue", "yellow", "green")) {
+                    if (!color.equals(human.getColor())) {
+                        players.add(createBot(color + " bot", color, getStartOffset(color)));
                     }
                 }
-            }, 1000 + new Random().nextInt(1000));
-        }
+            }
 
-        return currentGame;
+            System.out.println("Players before startGame():");
+            players.forEach(p -> System.out.println(" - " + p.getName() + " (" + p.getColor() + ")"));
+
+            currentGame.setPlayers(players);
+
+            // IMPORTANT: log right before calling startGame()
+            System.out.println("Calling currentGame.startGame() ...");
+            currentGame.startGame(); // <--- if this throws, stacktrace will show exact cause
+
+            System.out.println("✅ Game started successfully!");
+            // rest unchanged...
+            Player firstPlayer = getCurrentPlayer();
+            if (firstPlayer.isBot()) {
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        synchronized (GameService.this) {
+                            // Double check to ensure it's still this bot's turn
+                            if (getCurrentPlayer().getPlayerId().equals(firstPlayer.getPlayerId())) {
+                                handleBotTurn(firstPlayer);
+                            }
+                        }
+                    }
+                }, 1000 + new Random().nextInt(1000));
+            }
+            return currentGame;
+        } catch (Exception ex) {
+            System.out.println("❗ startNewGame failed for email: " + email + " -> " + ex.getMessage());
+            ex.printStackTrace();
+            throw ex; // rethrow so controller can send JSON error
+        }
+    }
+
+
+    private Player createHuman(String humanName, String humanColor) {
+        Player human = new Player();
+        human.setPlayerId(UUID.randomUUID().toString());
+        human.setName(humanName != null ? humanName : humanColor +  " Player");
+        human.setColor(humanColor);
+        human.initializeTokens();
+        human.setStartOffset(getStartOffset(humanColor));
+        human.setBot(false);
+        return human;
     }
 
     private Player createBot(String name, String color, int startOffset) {
@@ -108,6 +122,26 @@ public class GameService {
         bot.setStartOffset(startOffset);
         bot.setBot(true);
         return bot;
+    }
+
+    private int getStartOffset(String color) {
+        return switch (color.toLowerCase()) {
+            case "red" -> 0;
+            case "blue" -> 13;
+            case "yellow" -> 26;
+            case "green" -> 39;
+            default -> 0;
+        };
+    }
+
+    private String getTwoPlayerBotColor(String humanColor) {
+        return switch (humanColor.toLowerCase()) {
+          case "red" -> "yellow";
+          case "yellow" -> "red";
+          case "blue" -> "green";
+          case "green" -> "blue";
+          default -> "yellow";
+        };
     }
 
     /**

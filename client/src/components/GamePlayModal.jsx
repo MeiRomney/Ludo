@@ -7,7 +7,7 @@ const GamePlayModal = () => {
     const navigate = useNavigate();
 
     const startOnlineGame = async () => {
-      await fetch('http://localhost:8080/api/game/start', { method: 'POST' });
+      await fetch('http://localhost:8080/api/game/start?email=mei.romney987@gmail.com', { method: 'POST' });
       navigate('/gameplay', { state: { mode: 'online' } });
     }
 

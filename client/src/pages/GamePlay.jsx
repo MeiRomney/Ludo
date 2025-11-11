@@ -117,8 +117,8 @@ const GamePlay = () => {
     }
 
     if(!player || !dice) return;
-    console.log(`🎲 ${player.name} rolled ${dice.value} (rollId: ${dice.rollId})`);
-    setPendingRoll(dice.value);
+    console.log(`🎲 ${player.name} rolled ${dice}`);
+    setPendingRoll(dice);
     setRoller(player);
     setRollCount(prev => prev + 1);
 

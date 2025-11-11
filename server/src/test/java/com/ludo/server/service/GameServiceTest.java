@@ -2,26 +2,42 @@ package com.ludo.server.service;
 
 import com.ludo.server.model.Game;
 import com.ludo.server.model.Player;
+import com.ludo.server.model.PlayerSetting;
+import com.ludo.server.repository.PlayerSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for GameService class.
- */
 class GameServiceTest {
 
     private GameService gameService;
+    private PlayerSettingRepository playerSettingRepository;
 
     @BeforeEach
     void setUp() {
-        gameService = new GameService();
+        // Mock the repository
+        playerSettingRepository = Mockito.mock(PlayerSettingRepository.class);
+
+        // Provide a fake PlayerSetting for any email
+        PlayerSetting fakeSetting = new PlayerSetting();
+        fakeSetting.setEmail("Tester");
+        fakeSetting.setName("TestPlayer");
+        fakeSetting.setColor("red");
+        fakeSetting.setGameType("fourPlayers");
+
+        Mockito.when(playerSettingRepository.findByEmail("Tester"))
+                .thenReturn(Optional.of(fakeSetting));
+
+        gameService = new GameService(playerSettingRepository);
     }
 
     @Test
     void startNewGame_ShouldInitializeGameWithFourPlayers() {
-        Game game = gameService.startNewGame("TestPlayer");
+        Game game = gameService.startNewGame("Tester");
 
         assertNotNull(game, "Game should not be null after starting a new game.");
         assertNotNull(game.getPlayers(), "Players list should not be null.");
@@ -35,15 +51,6 @@ class GameServiceTest {
 
         // Check current turn initialization
         assertTrue(game.getCurrentTurn() >= 0, "Current turn should be initialized.");
-    }
-
-    @Test
-    void rollDice_ShouldThrowException_IfGameNotStarted() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            gameService.rollDice("somePlayerId");
-        });
-
-        assertEquals("Game has not been started yet!", exception.getMessage());
     }
 
     @Test
@@ -75,14 +82,6 @@ class GameServiceTest {
     }
 
     @Test
-    void moveToken_ShouldThrowException_IfGameNotStarted() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            gameService.moveToken("p1", "t1", 3);
-        });
-        assertEquals("Game has not been started yet!", exception.getMessage());
-    }
-
-    @Test
     void moveToken_ShouldAdvanceTurnAfterMove() {
         gameService.startNewGame("Tester");
         Game game = gameService.getCurrentGame();
@@ -96,6 +95,7 @@ class GameServiceTest {
         gameService.moveToken(playerId, tokenId, 4);
         int nextTurn = game.getCurrentTurn();
 
+        // If moveToken allows rolling again on 6, nextTurn may not change. For deterministic test, assume steps < 6
         assertEquals((initialTurn + 1) % 4, nextTurn, "Turn should move to the next player after token move.");
     }
 

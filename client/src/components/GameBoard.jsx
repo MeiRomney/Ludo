@@ -307,7 +307,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
         if(!currentPlayer || !pendingRoll ) return [];
 
         // Find token that can move with this roll
-        return currentPlayer.tokens
+        const movable = currentPlayer.tokens
             .filter(t => {
                 // Same rule as backend: can move if not in home (-1) and not finished
                 if(t.position === -1 && pendingRoll === 6) return true;
@@ -315,19 +315,46 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
                 return false;
             })
             .map(t => t.tokenId);
+        console.log("pendingRoll:", pendingRoll, "currentPlayer.tokens:", currentPlayer.tokens);
+        return movable;
     }
 
+    // const handleTokenClick = (playerColor, tokenId) => {     
+    //     // Only allow clicking current player's tokens
+    //     if(currentPlayer?.color != playerColor) return;
+    //     setSelectedToken(tokenId);
+
+    //     // Notify parent which token was selected
+    //     if(onMove) {
+    //         onMove({playerColor, tokenId });
+    //         setTimeout(() => setSelectedToken(null), 500);
+    //     }
+    // };
     const handleTokenClick = (playerColor, tokenId) => {     
         // Only allow clicking current player's tokens
-        if(currentPlayer?.color != playerColor) return;
+        if(currentPlayer?.color !== playerColor) return;
+
+        if (!pendingRoll) {
+            console.log("Cannot move token: No dice roll pending");
+            return;
+        }
+
+        // Check if token is actually movable
+        if(!getMovableTokenIds().includes(tokenId)) {
+            console.log("Token is not movable for this roll:", tokenId, pendingRoll);
+            return;
+        }
+
         setSelectedToken(tokenId);
 
-        // Notify parent which token was selected
+        // Notify parent to move token
         if(onMove) {
-            onMove({playerColor, tokenId });
+            onMove({ playerColor, tokenId });
+            // Optionally clear highlight after 500ms
             setTimeout(() => setSelectedToken(null), 500);
         }
     };
+
 
     const allPieces = getTokenPositions();
     const movableTokenIds = getMovableTokenIds();

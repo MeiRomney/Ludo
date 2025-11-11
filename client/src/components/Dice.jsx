@@ -5,30 +5,19 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
   const [rolling, setRolling] = useState(false);
   const [displayValue, setDisplayValue] = useState(diceRoll?.value?? null);
   const rollSound = useRef(null);
+  const skipNextEffect = useRef(false);
 
   useEffect(() => {
     rollSound.current = new Audio("/sounds/diceRoll.mp3");
     rollSound.current.volume = 0.6;
   }, []);
 
-  // useEffect(() => {
-  //   if(value != null && value !== displayValue) {
-  //     // Play sound when bot rolls
-  //     if(player?.isBot && rollSound.current) {
-  //       const sound = rollSound.current.cloneNode();
-  //       sound.play().catch(() => {})
-  //     }
-  //     setRolling(true);
-  //     setTimeout(() => {
-  //       setDisplayValue(value);
-  //       setRolling(false);
-  //     }, 600);
-  //   }
-  // }, [value, rollCount])
-
   // Props: value = dice value, rollCount = increments each roll
   useEffect(() => {
-    if (!diceRoll) return;
+    if (!diceRoll || skipNextEffect.current) {
+      skipNextEffect.current = false;
+      return;
+    } 
     
     setRolling(true);
     setDisplayValue(null);
@@ -44,7 +33,7 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
       setRolling(false);
     }, 600);
     return () => clearTimeout(timer);
-  }, [diceRoll?.rollId]); // or [rollCount] if you have a separate roll tracker
+  }, [diceRoll?.rollId]);
 
 
   const rollDice = async () => {
@@ -54,6 +43,8 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
     }
 
     setRolling(true);
+    skipNextEffect.current = true;
+
     try {
       if(rollSound.current) {
         const sound = rollSound.current.cloneNode();
@@ -63,7 +54,13 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
       // Show a fake quick animation before actual fetch result
       setDisplayValue(null);
 
-      const res = await fetch(`http://localhost:8080/api/game/roll?playerId=${player.playerId}`);
+      console.log("Rolling dice for player:", player.playerId);
+      const res = await fetch(`http://localhost:8080/api/game/roll?playerId=${player.playerId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
 
       if(!res.ok) {
         const errorData = await res.json();
@@ -76,7 +73,9 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
       // Small delay to let animation play before showing new dots
       setTimeout(() => {
         setDisplayValue(data);
-        if(onDiceRoll) onDiceRoll(data);
+        if(onDiceRoll) {
+          onDiceRoll(data);
+        } 
         setRolling(false);
       }, 600);
     } catch(err) {

@@ -1,30 +1,66 @@
 import React, { useState } from 'react'
 import { Check, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useUser } from '@clerk/clerk-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 const Setting = () => {
 
   const navigate = useNavigate();
+  const { user } = useUser();
+
   const [selectedColor, setSelectedColor] = useState('red');
   const [selectedType, setSelectedType] = useState('fourPlayers');
+  const [name, setName] = useState('');
 
   const types = [
     { name: 'fourPlayers', label: '4 Players' },
     { name: 'twoPlayers', label: '2 Players' },
   ]
   const colors = [
-    { name: 'Red', value: 'bg-red-500', hover: 'hover:bg-red-600' },
-    { name: 'Blue', value: 'bg-blue-500', hover: 'hover:bg-blue-600' },
-    { name: 'Green', value: 'bg-green-500', hover: 'hover:bg-green-600' },
-    { name: 'Yellow', value: 'bg-yellow-500', hover: 'hover:bg-yellow-600' },
+    { name: 'red', value: 'bg-red-500', hover: 'hover:bg-red-600' },
+    { name: 'blue', value: 'bg-blue-500', hover: 'hover:bg-blue-600' },
+    { name: 'green', value: 'bg-green-500', hover: 'hover:bg-green-600' },
+    { name: 'yellow', value: 'bg-yellow-500', hover: 'hover:bg-yellow-600' },
   ]
 
-  const apply = () => {
-    console.log("Apply");
+  const apply = async () => {
+    if(!user) {
+      console.error("❌ User not logged in");
+      toast.error("❌ User not logged in");
+      return;
+    }
+
+    const payload = {
+      name: name || selectedColor,
+      color: selectedColor,
+      gameType: selectedType,
+      email: user.primaryEmailAddress?.emailAddress,
+      clerkId: user.id,
+    };
+
+    try {
+      const res = await fetch("http://localhost:8080/api/settings/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if(!res.ok) throw new Error("Failed to save settings");
+
+      const data = await res.json();
+      console.log("✅ Settings saved:", data);
+      toast.success("✅ Settings saved");
+      navigate("/");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save settings");
+    }
   }
 
   return (
     <div className='absolute inset-0 z-50 flex w-1/3 h-3/4 justify-center text-center items-center m-auto rounded-xl bg-gray-300 bg-opacity-50'>
+      <Toaster position='top-center'/>
       <div className='relative p-10 rounded-xl w-[90%] h-[90%] flex flex-col bg-white shadow-lg'>
         <h2 className='text-3xl font-bold text-gray-800 mb-4 text-center'>Settings</h2>
         <button onClick={()=> navigate('/')} className='absolute top-4 right-4 w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer'><X/></button>
@@ -32,7 +68,12 @@ const Setting = () => {
           {/* Name */}
           <div className='flex flex-col gap-0 my-0 mb-2 w-full'>
             <h3 className='text-lg font-medium text-gray-700'>Enter Your Name</h3>
-            <input type="text" placeholder={`${selectedColor}`} className='w-full border border-gray-500 rounded-xl p-2' />
+            <input 
+              type="text" 
+              placeholder={`${selectedColor}`} 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className='w-full border border-gray-500 rounded-xl p-2' />
           </div>
           
 

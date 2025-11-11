@@ -1,9 +1,6 @@
 package com.ludo.server.controller;
 
-import com.ludo.server.model.Game;
-import com.ludo.server.model.Player;
-import com.ludo.server.model.Results;
-import com.ludo.server.model.Token;
+import com.ludo.server.model.*;
 import com.ludo.server.service.GameService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +20,32 @@ public class GameController {
         this.gameService = gameService;
     }
 
+//    @PostMapping("/start")
+//    public Game startGame(@RequestParam(required = false) String playerName) {
+//        System.out.println("🎯 /api/game/start endpoint hit!");
+//        return gameService.startNewGame(playerName != null ? playerName : "You");
+//    }
     @PostMapping("/start")
-    public Game startGame(@RequestParam(required = false) String playerName) {
-        System.out.println("🎯 /api/game/start endpoint hit!");
-        return gameService.startNewGame(playerName != null ? playerName : "You");
+    public ResponseEntity<?> startGame(@RequestParam String email) {
+        System.out.println("🎯 /api/game/start endpoint hit! email=" + email);
+        try {
+            Game game = gameService.startNewGame(email);
+
+            // Find the human playerId
+            String playerId = game.getPlayers().stream()
+                    .filter(p -> !p.isBot())
+                    .map(Player::getPlayerId)
+                    .findFirst()
+                    .orElse(null);
+
+            return ResponseEntity.ok(Map.of("game", game, "playerId", playerId));
+        } catch(IllegalStateException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Internal server error", "details",  e.getMessage()));
+        }
     }
 
     @PostMapping("/move")
@@ -56,6 +75,7 @@ public class GameController {
 
     @GetMapping("/roll")
     public int rollDice(@RequestParam String playerId) {
+        System.out.println("🎲 Roll requested for playerId: " + playerId);
         return gameService.rollDice(playerId);
     }
 
