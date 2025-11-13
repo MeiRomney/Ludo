@@ -5,10 +5,8 @@ import com.ludo.server.service.GameService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/game")
@@ -48,17 +46,6 @@ public class GameController {
         }
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<?> createGame(@RequestParam String email) {
-        Game game = gameService.createNewMultiplayerGame(email);
-        return ResponseEntity.ok(Map.of("gameId", game.getGameId()));
-    }
-
-    @PostMapping("/join")
-    public ResponseEntity<?> joinGame(@RequestParam String email, @RequestParam String gameId) {
-        Game game = gameService.joinExistingGame(email, gameId);
-        return ResponseEntity.ok(Map.of("game", game));
-    }
 
     @PostMapping("/move")
     public Game moveToken(@RequestParam String playerId,
