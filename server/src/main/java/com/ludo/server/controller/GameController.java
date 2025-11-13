@@ -48,6 +48,18 @@ public class GameController {
         }
     }
 
+    @PostMapping("/create")
+    public ResponseEntity<?> createGame(@RequestParam String email) {
+        Game game = gameService.createNewMultiplayerGame(email);
+        return ResponseEntity.ok(Map.of("gameId", game.getGameId()));
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<?> joinGame(@RequestParam String email, @RequestParam String gameId) {
+        Game game = gameService.joinExistingGame(email, gameId);
+        return ResponseEntity.ok(Map.of("game", game));
+    }
+
     @PostMapping("/move")
     public Game moveToken(@RequestParam String playerId,
                           @RequestParam String tokenId,
