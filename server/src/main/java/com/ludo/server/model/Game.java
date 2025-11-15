@@ -11,6 +11,10 @@ public class Game {
     private List<Player> players;
     private int currentTurn;
     private Map<String, DiceRoll> lastDiceRolls;
+    private int lastRollValue;
+    private boolean diceRolledThisTurn;
+    private boolean Paused;
+    private boolean started;
 
     public Game() {
         this.gameId = UUID.randomUUID().toString();
@@ -184,5 +188,33 @@ public class Game {
     }
     public void setLastDiceRolls(Map<String, DiceRoll> lastDiceRolls) {
         this.lastDiceRolls = lastDiceRolls;
+    }
+
+    public int getLastRollValue() {
+        return lastRollValue;
+    }
+    public void setLastRollValue(int lastRollValue) {
+        this.lastRollValue = lastRollValue;
+    }
+
+    public boolean isDiceRolledThisTurn() {
+        return diceRolledThisTurn;
+    }
+    public void setDiceRolledThisTurn(boolean diceRolledThisTurn) {
+        this.diceRolledThisTurn = diceRolledThisTurn;
+    }
+
+    public boolean isPaused() {
+        return Paused;
+    }
+    public void setPaused(boolean Paused) {
+        this.Paused = Paused;
+    }
+
+    public boolean isStarted() {
+        return started;
+    }
+    public void setStarted(boolean started) {
+        this.started = started;
     }
 }

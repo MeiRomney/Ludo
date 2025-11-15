@@ -11,12 +11,14 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.53.3",
+    "@stomp/stompjs": "^7.2.1",
     "@tailwindcss/vite": "^4.1.14",
     "lucide-react": "^0.546.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.4",
+    "sockjs-client": "^1.6.1",
     "tailwindcss": "^4.1.14"
   },
   "devDependencies": {

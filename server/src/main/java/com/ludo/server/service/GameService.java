@@ -2,146 +2,147 @@ package com.ludo.server.service;
 
 import com.ludo.server.model.*;
 import com.ludo.server.repository.PlayerSettingRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class GameService {
-    private Game currentGame;
-    private boolean paused = false;
-    private int lastRollValue = 0;
-    private boolean diceRolledThisTurn = false;
+    // Multiple active games keyed by gameId
+    private final Map<String, Game> activeGames = new ConcurrentHashMap<>();
+    // Map playerId -> gameId (so we can resolve which game a player belongs to)
+    private final Map<String, String> playerToGame = new ConcurrentHashMap<>();
+
+    private final PlayerSettingRepository playerSettingRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
 
     private static final Set<Integer> SAFE_CELLS = Set.of(0, 8, 13, 21, 26, 34, 39, 47);
 
-    private final PlayerSettingRepository playerSettingRepository;
 
-    public GameService(PlayerSettingRepository playerSettingRepository) {
+    public GameService(PlayerSettingRepository playerSettingRepository, SimpMessagingTemplate messagingTemplate) {
         this.playerSettingRepository = playerSettingRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
-    /**
-     * Starts a new game
-     *
-     * @return the current game
-     */
-    public Game startNewGame(String email) {
-        System.out.println("⚙️ Starting new game for email: " + email);
-        try {
-            // Fetch user from database
-            var optional = playerSettingRepository.findByEmail(email);
-            if (optional.isEmpty()) {
-                System.out.println("❌ playerSettingRepository.findByEmail returned empty for: " + email);
-                throw new IllegalStateException("User not found with email: " + email);
-            }
-            PlayerSetting humanSetting = optional.get();
-            System.out.println("✅ Found PlayerSetting: " + humanSetting);
+    public synchronized Game createMultiplayerGame(String email) {
+        PlayerSetting humanSetting = getPlayerSetting(email);
 
-            // Defensive checks
-            if (humanSetting.getColor() == null) {
-                throw new IllegalStateException("User has no color set: " + humanSetting);
-            }
-            if (humanSetting.getName() == null) {
-                System.out.println("⚠️ name is null — will use color-based default");
-            }
+        Game game = new Game();
+        String gameId = UUID.randomUUID().toString();
+        game.setGameId(gameId);
+        game.setPlayers(new ArrayList<>());
+        game.setCurrentTurn(0);
 
-            currentGame = new Game();
-            List<Player> players = new ArrayList<>();
+        Player human = createHuman(humanSetting.getName(), humanSetting.getColor());
+        game.getPlayers().add(human);
 
-            Player human = createHuman(humanSetting.getName(), humanSetting.getColor());
-            System.out.println("👤 Created human player: " + human.getName() + " color=" + human.getColor());
-            players.add(human);
+        activeGames.put(gameId, game);
+        playerToGame.put(human.getPlayerId(), gameId);
 
-            int gameType = Objects.equals(humanSetting.getGameType(), "fourPlayers") ? 4 : 2;
-            System.out.println("🏷️ gameType="+gameType + " from saved: " + humanSetting.getGameType());
+        broadcastGameState(game);
+        return game;
+    }
 
-            if (gameType == 2) {
-                String botColor = getTwoPlayerBotColor(human.getColor());
-                players.add(createBot(botColor + " bot", botColor, getStartOffset(botColor)));
-            } else {
-                for (String color : List.of("red", "blue", "yellow", "green")) {
-                    if (!color.equals(human.getColor())) {
-                        players.add(createBot(color + " bot", color, getStartOffset(color)));
-                    }
-                }
-            }
+    public synchronized Game joinExistingGame(String email, String gameId) {
+        Game game = activeGames.get(gameId);
+        if(game == null) throw new IllegalStateException("Game not found " + gameId);
 
-            System.out.println("Players before startGame():");
-            players.forEach(p -> System.out.println(" - " + p.getName() + " (" + p.getColor() + ")"));
-
-            currentGame.setPlayers(players);
-
-            // IMPORTANT: log right before calling startGame()
-            System.out.println("Calling currentGame.startGame() ...");
-            currentGame.startGame(); // <--- if this throws, stacktrace will show exact cause
-
-            System.out.println("✅ Game started successfully!");
-            // rest unchanged...
-            Player firstPlayer = getCurrentPlayer();
-            if (firstPlayer.isBot()) {
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        synchronized (GameService.this) {
-                            // Double check to ensure it's still this bot's turn
-                            if (getCurrentPlayer().getPlayerId().equals(firstPlayer.getPlayerId())) {
-                                handleBotTurn(firstPlayer);
-                            }
-                        }
-                    }
-                }, 1000 + new Random().nextInt(1000));
-            }
-            return currentGame;
-        } catch (Exception ex) {
-            System.out.println("❗ startNewGame failed for email: " + email + " -> " + ex.getMessage());
-            ex.printStackTrace();
-            throw ex; // rethrow so controller can send JSON error
+        if(game.getPlayers().size() >= 4) {
+            throw new IllegalStateException("Game is already full");
         }
+
+        PlayerSetting humanSetting = getPlayerSetting(email);
+        Player player = createHuman(humanSetting.getName(), humanSetting.getColor());
+        List<String> allColors = List.of("red", "blue", "yellow", "green");
+        String chosenColor = humanSetting.getColor();
+
+        // Prevent duplicate names/colors in the same room
+        String finalChosenColor = chosenColor;
+        if(game.getPlayers().stream().anyMatch(p -> p.getColor().equalsIgnoreCase(finalChosenColor))) {
+            // if color already exists, force change color
+            chosenColor = allColors.stream()
+                    .filter(c -> game.getPlayers().stream().noneMatch(p -> p.getColor().equals(c)))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No color left"));
+        }
+        player.setColor(chosenColor);
+        player.setStartOffset(getStartOffset(chosenColor));
+
+        game.getPlayers().add(player);
+        playerToGame.put(player.getPlayerId(), gameId);
+
+        // If the room has enough players to start (2 or more), start the game
+        // We may choose to wait until explicit 'Start' from host, here we auto-start at 2+ players
+        if(game.getPlayers().size() >= 2 && !game.isStarted()) {
+            PlayerSetting hostSetting = getPlayerSetting(email);
+            int totalPlayers = hostSetting.getGameType().equalsIgnoreCase("twoPlayers") ? 2 : 4;
+            startGameInternal(game, totalPlayers);
+        } else {
+            broadcastGameState(game);
+        }
+
+        return game;
     }
 
-
-    private Player createHuman(String humanName, String humanColor) {
-        Player human = new Player();
-        human.setPlayerId(UUID.randomUUID().toString());
-        human.setName(humanName != null ? humanName : humanColor +  " Player");
-        human.setColor(humanColor);
-        human.initializeTokens();
-        human.setStartOffset(getStartOffset(humanColor));
-        human.setBot(false);
-        return human;
+    private PlayerSetting getPlayerSetting(String email) {
+        var optional = playerSettingRepository.findByEmail(email);
+        if(optional.isEmpty()) throw new IllegalStateException("User not found with email: " + email);
+        return optional.get();
     }
 
-    private Player createBot(String name, String color, int startOffset) {
-        Player bot = new Player();
-        bot.setPlayerId(UUID.randomUUID().toString());
-        bot.setName(name);
-        bot.setColor(color);
-        bot.initializeTokens();
-        bot.setStartOffset(startOffset);
-        bot.setBot(true);
-        return bot;
+    public synchronized Game startNewGame(String email) {
+        // Create a single player game with bots prefilled
+        Game game = createMultiplayerGame(email);
+
+        int totalPlayers = getPlayerSetting(email).getGameType().equalsIgnoreCase("twoPlayers") ? 2 : 4;
+        startGameInternal(game, totalPlayers);
+
+        return game;
     }
 
-    private int getStartOffset(String color) {
-        return switch (color.toLowerCase()) {
-            case "red" -> 0;
-            case "blue" -> 13;
-            case "yellow" -> 26;
-            case "green" -> 39;
-            default -> 0;
-        };
-    }
+    private void startGameInternal(Game game, int totalPlayers) {
+        // Build bots or complete player list to 2-4 depending on saved preference
+        List<Player> players = new ArrayList<>(game.getPlayers());
+        Player human = players.get(0);
 
-    private String getTwoPlayerBotColor(String humanColor) {
-        return switch (humanColor.toLowerCase()) {
-          case "red" -> "yellow";
-          case "yellow" -> "red";
-          case "blue" -> "green";
-          case "green" -> "blue";
-          default -> "yellow";
-        };
+        List<String> allColors = List.of("red", "blue", "yellow", "green");
+        List<String> availableColors = new ArrayList<>(allColors);
+        availableColors.remove(human.getColor());
+
+        // If host saved gameType, we could use it; fallback to 2-player if only one human
+        // For simplicity: if <2 players, add one bot; if 2 players already, optionally fill to 4 with bots
+        if(totalPlayers == 2) {
+            String botColor = getTwoPlayerBotColor(human.getColor());
+            Player bot = createBot(botColor + " bot", botColor, getStartOffset(botColor));
+            players.add(bot);
+
+            playerToGame.put(bot.getPlayerId(), game.getGameId());
+        } else {
+            while(players.size() < totalPlayers) {
+                String botColor = availableColors.remove(0);
+                Player bot = createBot(botColor + " bot", botColor, getStartOffset(botColor));
+                players.add(bot);
+                playerToGame.put(bot.getPlayerId(), game.getGameId());
+            }
+        }
+
+        game.setPlayers(players);
+        game.startGame();
+        game.setStarted(true);
+        broadcastGameState(game);
+
+        // If first player is bot, schedule its action
+        Player first = getCurrentPlayer(game);
+        if(first.isBot()) {
+            scheduleBotTurn(game.getGameId(), first, 1000 + new Random().nextInt(1000));
+        }
     }
 
     /**
@@ -150,31 +151,33 @@ public class GameService {
      * @return the value of the rolled dice
      */
     public synchronized int rollDice(String playerId) {
-        if(paused) {
+        String gameId = playerToGame.get(playerId);
+        if(gameId == null) throw new IllegalStateException("Player not in a game");
+        Game game = activeGames.get(gameId);
+        if(game == null) throw new IllegalStateException("Game not found for player");
+
+        if(game.isPaused()) {
             throw new IllegalStateException("⚠️ Game is currently paused!");
         }
 
-        if (currentGame == null) {
-            throw new IllegalStateException("Game has not been started yet!");
-        }
-
-        Player current = getCurrentPlayer();
-
+        Player current = getCurrentPlayer(game);
         // Ensures only current player can roll
         if (!current.getPlayerId().equals(playerId)) {
             throw new IllegalStateException("❌ It's not your turn!");
         }
 
         // Ensure they haven't already rolled this turn
-        if (diceRolledThisTurn) {
+        if (game.isDiceRolledThisTurn()) {
             throw new IllegalStateException("⚠️ You've already rolled the dice this turn!");
         }
 
-        int value = currentGame.rollDiceForPlayer(current);
-        lastRollValue = value;
-        diceRolledThisTurn = true;
+        int value = game.rollDiceForPlayer(current);
+        game.setLastRollValue(value);
+        game.setDiceRolledThisTurn(true);
 
-        System.out.println("🎲 " + current.getName() + " rolled a " + value);
+        System.out.println("🎲 " + current.getName() + " rolled a " + value + " in game " + gameId);
+
+        broadcastGameState(game);
 
         // Check if any token can move right now
         var movableTokens = current.getTokens().stream()
@@ -184,25 +187,16 @@ public class GameService {
         if (movableTokens.isEmpty()) {
             System.out.println("⚠️ No possible moves for " + current.getName() + " with roll " + value);
             if (value != 6) {
-                nextTurn();
+                nextTurn(game);
             } else {
                 System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
                 if (current.isBot()) {
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            synchronized (GameService.this) {
-                                // Double check to ensure it's still this bot's turn
-                                if (getCurrentPlayer().getPlayerId().equals(current.getPlayerId())) {
-                                    handleBotTurn(current);
-                                }
-                            }
-                        }
-                    }, 1000 + new Random().nextInt(1000));
+                    scheduleBotTurn(gameId, current, 1000 + new Random().nextInt(1000));
                 }
             }
-            lastRollValue = 0;
-            diceRolledThisTurn = false;
+            game.setLastRollValue(0);
+            game.setDiceRolledThisTurn(false);
+            broadcastGameState(game);
         }
 
         return value;
@@ -216,17 +210,16 @@ public class GameService {
      * @param tokenId
      * @param steps
      */
-    public void moveToken(String playerId, String tokenId, int steps) {
-        if(paused) {
+    public synchronized void moveToken(String playerId, String tokenId, int steps) {
+        String gameId = playerToGame.get(playerId);
+        if(gameId == null) throw new IllegalStateException("Player not in a game");
+        Game game = activeGames.get(gameId);
+        if(game == null) throw new IllegalStateException("Game not found for player");
+        if(game.isPaused()) {
             throw new IllegalStateException("⚠️ Game is currently paused!");
         }
 
-        if (currentGame == null) {
-            throw new IllegalStateException("Game has not been started yet!");
-        }
-
-        Player current = getCurrentPlayer();
-
+        Player current = getCurrentPlayer(game);
         if (!current.getPlayerId().equals(playerId)) {
             throw new IllegalStateException("❌ It's not " + playerId + "'s turn!");
         }
@@ -245,27 +238,17 @@ public class GameService {
         // If no token can move, skip automatically
         if (movableTokens.isEmpty()) {
             System.out.println("⚠️ No possible moves for " + current.getName() + " with roll " + steps);
-
             if (steps == 6) {
                 System.out.println("🎁 " + current.getName() + " rolled 6 but can’t move — still gets another turn!");
                 // If it's a bot, trigger its turn automatically after a delay
                 if (current.isBot()) {
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            synchronized (GameService.this) {
-                                // Double check to ensure it's still this bot's turn
-                                if (getCurrentPlayer().getPlayerId().equals(current.getPlayerId())) {
-                                    handleBotTurn(current);
-                                }
-                            }
-                        }
-                    }, 1000 + new Random().nextInt(1000));
+                    scheduleBotTurn(gameId, current, 1000 + new Random().nextInt(1000));
                 }
             } else {
-                nextTurn();
+                nextTurn(game);
             }
-            lastRollValue = 0;
+            game.setLastRollValue(0);
+            broadcastGameState(game);
             return;
         }
 
@@ -275,14 +258,14 @@ public class GameService {
         }
 
         // Perform the single token movement (only once)
-        currentGame.moveToken(playerId, token.getTokenId(), steps);
+        game.moveToken(playerId, token.getTokenId(), steps);
 
         // Capture Logic
         int newPos = token.getAbsolutePosition(current.getStartOffset());
 
         // Only check captures if not in a safe zone
         if (!SAFE_CELLS.contains(newPos)) {
-            for (Player p : currentGame.getPlayers()) {
+            for (Player p : game.getPlayers()) {
                 if (p == current) continue;
 
                 for (var opponentToken : p.getTokens()) {
@@ -297,16 +280,16 @@ public class GameService {
 
         // Debug logging of positions after the move
         System.out.println("After move: ");
-        for (Player p : currentGame.getPlayers()) {
+        for (Player p : game.getPlayers()) {
             p.getTokens().forEach(t -> System.out.println(p.getColor() + " token " + t.getTokenId() + " -> " + t.getPosition()));
         }
 
         // Check if player finished all tokens
-        Player winner = currentGame.checkWinner();
+        Player winner = game.checkWinner();
         if (winner != null) {
             System.out.println("🏆 " + winner.getName() + " has finished all their tokens!");
 
-            long unfinishedPlayers = currentGame.getPlayers().stream()
+            long unfinishedPlayers = game.getPlayers().stream()
                     .filter(p -> p.getTokens().stream().anyMatch(t -> !t.isFinished()))
                     .count();
 
@@ -319,29 +302,31 @@ public class GameService {
         }
 
         // Extra turn logic if 6 is rolled, same players plays again
-        if (lastRollValue == 6) {
+        if (game.getLastRollValue() == 6) {
             System.out.println("🎁 " + current.getName() + " rolled a 6 and gets another turn!");
             // If it's a bot, trigger its turn automatically after a delay
             if (current.isBot()) {
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        synchronized (GameService.this) {
-                            // Double check to ensure it's still this bot's turn
-                            if (getCurrentPlayer().getPlayerId().equals(current.getPlayerId())) {
-                                handleBotTurn(current);
-                            }
-                        }
-                    }
-                }, 1000 + new Random().nextInt(1000));
+                scheduleBotTurn(gameId, current, 1000 + new Random().nextInt(1000));
+//                new Timer().schedule(new TimerTask() {
+//                    @Override
+//                    public void run() {
+//                        synchronized (GameService.this) {
+//                            // Double check to ensure it's still this bot's turn
+//                            if (getCurrentPlayer().getPlayerId().equals(current.getPlayerId())) {
+//                                handleBotTurn(current);
+//                            }
+//                        }
+//                    }
+//                }, 1000 + new Random().nextInt(1000));
             }
         } else {
-            nextTurn();
+            nextTurn(game);
         }
 
         // Clear last rolled value to avoid accidental reuse
-        lastRollValue = 0;
-        diceRolledThisTurn = false;
+        game.setLastRollValue(0);
+        game.setDiceRolledThisTurn(false);
+        broadcastGameState(game);
     }
 
     /**
@@ -349,72 +334,38 @@ public class GameService {
      *
      * @return the winner
      */
-    public Player checkWinner() {
-        if (currentGame == null) {
-            return null;
-        }
-        return currentGame.checkWinner();
+    public Player checkWinnerByGameId(String gameId) {
+        Game game = activeGames.get(gameId);
+        return game == null ? null : game.checkWinner();
     }
 
     /**
      * Moves to the next player's turn
      */
-    public synchronized void nextTurn() {
-        if (currentGame == null || currentGame.getPlayers() == null || currentGame.getPlayers().isEmpty()) return;
+    public synchronized void nextTurn(Game game) {
+        if (game == null || game.getPlayers() == null || game.getPlayers().isEmpty()) return;
 
-        int totalPlayers = currentGame.getPlayers().size();
-        int next = (currentGame.getCurrentTurn() + 1) % totalPlayers;
+        int totalPlayers = game.getPlayers().size();
+        int next = (game.getCurrentTurn() + 1) % totalPlayers;
 
         // Skip players who finished all tokens
         int safety = 0;
-        while (currentGame.getPlayers().get(next).getTokens().stream().allMatch(t -> t.isFinished()) && safety < totalPlayers) {
+        while (game.getPlayers().get(next).getTokens().stream().allMatch(t -> t.isFinished()) && safety < totalPlayers) {
             next = (next + 1) % totalPlayers;
             safety++;
         }
 
-        currentGame.setCurrentTurn(next);
-        diceRolledThisTurn = false;
-        lastRollValue = 0;
+        game.setCurrentTurn(next);
+        game.setDiceRolledThisTurn(false);
+        game.setLastRollValue(0);
 
-        Player nextPlayer = getCurrentPlayer();
-        System.out.println("➡️ Next turn: " + nextPlayer.getName());
+        Player nextPlayer = getCurrentPlayer(game);
+        System.out.println("➡️ Next turn: " + nextPlayer.getName() + " (game " + game.getGameId() + ")");
+
+        broadcastGameState(game);
 
         if (nextPlayer.isBot()) {
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    synchronized (GameService.this) {
-                        // Double check : ensure it's still this bot's turn before proceeding
-                        if (getCurrentPlayer().getPlayerId().equals(nextPlayer.getPlayerId())) {
-                            handleBotTurn(nextPlayer);
-                        }
-                    }
-                }
-            }, 1000 + new Random().nextInt(1000));
-        }
-    }
-
-    /**
-     * Simple bot logic: auto roll and auto move
-     */
-    private void handleBotTurn(Player bot) {
-        if(paused) return;
-        try {
-            System.out.println("🤖 " + bot.getName() + " is thinking...");
-            Thread.sleep(300);
-
-            int roll = rollDice(bot.getPlayerId());
-            var movable = bot.getTokens().stream().filter(t -> t.canMove(roll)).toList();
-
-            if (!movable.isEmpty()) {
-                Token chosen = movable.get(new Random().nextInt(movable.size()));
-                Thread.sleep(500 + new Random().nextInt(1000)); // 0.5-1.5s delay
-                moveToken(bot.getPlayerId(), chosen.getTokenId(), roll);
-            } else {
-                System.out.println("⚠️ No moves for " + bot.getName());
-            }
-        } catch (Exception e) {
-            System.out.println("🤖 Bot turn error for " + bot.getName() + ": " + e.getMessage());
+            scheduleBotTurn(game.getGameId(), nextPlayer, 1000 + new Random().nextInt(1000));
         }
     }
 
@@ -453,42 +404,123 @@ public class GameService {
         return new Results(winner, scoreboard);
     }
 
-    private Player getCurrentPlayer() {
-        return currentGame.getPlayers().get(currentGame.getCurrentTurn());
+    private Player createHuman(String humanName, String humanColor) {
+        Player human = new Player();
+        human.setPlayerId(UUID.randomUUID().toString());
+        human.setName(humanName != null ? humanName : humanColor +  " player");
+        human.setColor(humanColor);
+        human.initializeTokens();
+        human.setStartOffset(getStartOffset(humanColor));
+        human.setBot(false);
+        return human;
     }
 
-    public Game getCurrentGame() {
-        return currentGame;
+    private Player createBot(String name, String color, int startOffset) {
+        Player bot = new Player();
+        bot.setPlayerId(UUID.randomUUID().toString());
+        bot.setName(name);
+        bot.setColor(color);
+        bot.initializeTokens();
+        bot.setStartOffset(startOffset);
+        bot.setBot(true);
+        return bot;
     }
 
-    public synchronized boolean isPaused() {
-        return paused;
+    private int getStartOffset(String color) {
+        return switch (color.toLowerCase()) {
+            case "red" -> 0;
+            case "blue" -> 13;
+            case "yellow" -> 26;
+            case "green" -> 39;
+            default -> 0;
+        };
     }
-    public synchronized void setPaused(boolean pause) {
-        this.paused = pause;
-        System.out.println(pause ? "⏸️ Game paused" : "▶️ Game resumed");
 
-        // Safety check
-        if(currentGame == null || currentGame.getPlayers() == null) {
-            System.out.println("⚠️ No active game to pause/resume.");
-            return;
+    private String getTwoPlayerBotColor(String humanColor) {
+        return switch (humanColor.toLowerCase()) {
+            case "red" -> "yellow";
+            case "yellow" -> "red";
+            case "blue" -> "green";
+            case "green" -> "blue";
+            default -> "yellow";
+        };
+    }
+
+    private void scheduleBotTurn(String gameId, Player bot, long delayMs) {
+        scheduler.schedule(() -> {
+            synchronized (GameService.this) {
+                Game game = activeGames.get(gameId);
+                if(game == null) return;
+                Player current = getCurrentPlayer(game);
+                if(!current.getPlayerId().equals(bot.getPlayerId())) return;
+                if(game.isDiceRolledThisTurn()) return;
+                handleBotTurn(game, bot);
+            }
+        }, delayMs, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Simple bot logic: auto roll and auto move
+     */
+    private void handleBotTurn(Game game, Player bot) {
+        if(game.isPaused()) return;
+        try {
+            System.out.println("🤖 " + bot.getName() + " is thinking... (game " + game.getGameId() + ")");
+            Thread.sleep(300);
+
+            int roll = rollDice(bot.getPlayerId());
+            var movable = bot.getTokens().stream().filter(t -> t.canMove(roll)).toList();
+
+            if (!movable.isEmpty()) {
+                Token chosen = movable.get(new Random().nextInt(movable.size()));
+                Thread.sleep(500 + new Random().nextInt(1000)); // 0.5-1.5s delay
+                moveToken(bot.getPlayerId(), chosen.getTokenId(), roll);
+            } else {
+                System.out.println("⚠️ No moves for " + bot.getName());
+            }
+        } catch (Exception e) {
+            System.out.println("🤖 Bot turn error for " + bot.getName() + ": " + e.getMessage());
+            game.setDiceRolledThisTurn(false);
         }
+    }
+
+    private void broadcastGameState(Game game) {
+        try {
+            messagingTemplate.convertAndSend("/topic/game/" + game.getGameId(), game);
+        } catch (Exception e) {
+            System.out.println("Failed to broadcast game state: " + e.getMessage());
+        }
+    }
+
+    private Player getCurrentPlayer(Game game) {
+        return game.getPlayers().get(game.getCurrentTurn());
+    }
+
+    public Game getGameById(String gameId) {
+        return activeGames.get(gameId);
+    }
+
+    public Game getGameForPlayer(String playerId) {
+        String gameId = playerToGame.get(playerId);
+        return gameId == null ? null : activeGames.get(gameId);
+    }
+
+//    public synchronized boolean isPaused() {
+//        return paused;
+//    }
+    public synchronized void setPaused(String gameId, boolean pause) {
+        Game game = activeGames.get(gameId);
+        if(game == null) return;
+        game.setPaused(pause);
+        broadcastGameState(game);
+        System.out.println(pause ? "⏸️ Game paused" : "▶️ Game resumed");
 
         if(!pause) {
             // Resume logic: check if it's bot turn
-            Player current = getCurrentPlayer();
+            Player current = getCurrentPlayer(game);
             if(current != null && current.isBot()) {
                 System.out.println("🤖 Resuming bot turn for " + current.getName());
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        synchronized (GameService.this) {
-                            if(getCurrentPlayer().getPlayerId().equals(current.getPlayerId()) && !paused) {
-                                handleBotTurn(current);
-                            }
-                        }
-                    }
-                }, 1000);
+                scheduleBotTurn(gameId, current, 1000 + new Random().nextInt(1000));
             }
         }
     }

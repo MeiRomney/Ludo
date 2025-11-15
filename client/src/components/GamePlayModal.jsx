@@ -18,11 +18,28 @@ const GamePlayModal = () => {
       }
       try {
         const email = user?.primaryEmailAddress?.emailAddress;
-        const res = await fetch(`http://localhost:8080/api/game/start?email=${email}`, { method: 'POST' });
+        const res = await fetch(`http://localhost:8080/api/game/start?email=${encodeURIComponent(email)}`, { method: 'POST' });
 
         if(!res.ok) throw new Error("Failed to start computer game");
 
-        navigate('/gameplay', { state: { mode: 'computer' } });
+        const data = await res.json();
+        console.log("📥 Server Response:", data);
+
+        const game = data.game;
+        const playerId = data.playerId;
+
+        if(!game?.gameId) {
+          throw new Error("Server did not return a gameId");
+        }
+        console.log(game.gameId);
+
+        navigate('/gameplay', { 
+          state: { 
+            mode: 'computer', 
+            gameId: game.gameId, 
+            playerId: playerId,
+          } 
+        });
       } catch (err) {
         console.error("Error starting game:", err);
         toast.error("Failed to start computer game");

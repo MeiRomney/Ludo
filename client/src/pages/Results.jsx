@@ -9,7 +9,10 @@ const Results = () => {
   const [winner, setWinner] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/game/results")
+    const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
+    if(!finalGame?.gameId) return;
+
+    fetch(`http://localhost:8080/api/game/results?gameId=${encodeURIComponent(finalGame.gameId)}`)
       .then(res => res.json())
       .then(data => {
         console.log("Results fetched: ", data);

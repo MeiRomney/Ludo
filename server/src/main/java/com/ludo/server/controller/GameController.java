@@ -18,11 +18,6 @@ public class GameController {
         this.gameService = gameService;
     }
 
-//    @PostMapping("/start")
-//    public Game startGame(@RequestParam(required = false) String playerName) {
-//        System.out.println("🎯 /api/game/start endpoint hit!");
-//        return gameService.startNewGame(playerName != null ? playerName : "You");
-//    }
     @PostMapping("/start")
     public ResponseEntity<?> startGame(@RequestParam String email) {
         System.out.println("🎯 /api/game/start endpoint hit! email=" + email);
@@ -46,56 +41,96 @@ public class GameController {
         }
     }
 
+    @PostMapping("/create")
+    public ResponseEntity<?> createGame(@RequestParam String email) {
+        try {
+            Game game = gameService.createMultiplayerGame(email);
+            return ResponseEntity.ok(Map.of("gameId", game.getGameId(), "game", game));
+        } catch(Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/join")
+    public ResponseEntity<?> joinGame(@RequestParam String email, @RequestParam String gameId) {
+        try {
+            Game game = gameService.joinExistingGame(email, gameId);
+            // return full game so client can render
+            return ResponseEntity.ok(Map.of("game", game));
+        } catch(IllegalStateException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        } catch(Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+
+    }
+
+    @GetMapping("/roll")
+    public ResponseEntity<?> rollDice(@RequestParam String playerId) {
+        try {
+            int val = gameService.rollDice(playerId);
+            return ResponseEntity.ok(Map.of("value", val));
+        } catch(Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
+    }
 
     @PostMapping("/move")
-    public Game moveToken(@RequestParam String playerId,
+    public ResponseEntity<?> moveToken(@RequestParam String playerId,
                           @RequestParam String tokenId,
                           @RequestParam int steps) {
-        gameService.moveToken(playerId, tokenId, steps);
-        return gameService.getCurrentGame();
+        try {
+            gameService.moveToken(playerId, tokenId, steps);
+            Game game = gameService.getGameForPlayer(playerId);
+            return ResponseEntity.ok(Map.of("game", game));
+        } catch(Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/pause")
-    public ResponseEntity<String> pauseGame() {
-        gameService.setPaused(true);
+    public ResponseEntity<String> pauseGame(@RequestParam String gameId) {
+        gameService.setPaused(gameId, true);
         return ResponseEntity.ok("Game paused");
     }
 
     @PostMapping("/resume")
-    public ResponseEntity<String> resumeGame() {
-        gameService.setPaused(false);
+    public ResponseEntity<String> resumeGame(@RequestParam String gameId) {
+        gameService.setPaused(gameId, false);
         return ResponseEntity.ok("Game resumed");
     }
 
-    @GetMapping("/paused")
-    public ResponseEntity<Boolean> isPaused() {
-        return ResponseEntity.ok(gameService.isPaused());
-    }
+//    @GetMapping("/paused")
+//    public ResponseEntity<Boolean> isPaused() {
+//        return ResponseEntity.ok(gameService.isPaused());
+//    }
 
-    @GetMapping("/roll")
-    public int rollDice(@RequestParam String playerId) {
-        System.out.println("🎲 Roll requested for playerId: " + playerId);
-        return gameService.rollDice(playerId);
-    }
 
     @GetMapping("/winner")
-    public Player checkWinner() {
-        return gameService.checkWinner();
+    public Player checkWinner(@RequestParam String gameId) {
+        return gameService.checkWinnerByGameId(gameId);
     }
 
     @GetMapping("/state")
-    public Game getCurrentGame() {
-        return gameService.getCurrentGame();
+    public ResponseEntity<?> getState(@RequestParam String gameId) {
+        Game game = gameService.getGameById(gameId);
+        if(game == null) return ResponseEntity.status(404).body(Map.of("error", "Game not found"));
+        return ResponseEntity.ok(game);
     }
 
     @GetMapping("/results")
-    public Results getResults() {
-        Game current = gameService.getCurrentGame();
-        if(current == null) {
+    public Results getResults(@RequestParam String gameId) {
+        Game game = gameService.getGameById(gameId);
+        if(game == null) {
             return new Results(null, List.of());
         }
 
-        gameService.checkWinner();
-        return gameService.buildResults(current);
+        gameService.checkWinnerByGameId(gameId);
+        return gameService.buildResults(game);
     }
 }

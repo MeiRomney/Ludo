@@ -1,168 +1,312 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Home, Pause, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import PlayerCard from '../components/PlayerCard';
 import Dice from '../components/Dice';
 import GameBoard from '../components/GameBoard';
 import toast, { Toaster } from 'react-hot-toast';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { useUser } from '@clerk/clerk-react';
+
+const API_BASE = "http://localhost:8080/api/game";
 
 const GamePlay = () => {
-
+  const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useUser();
+
+  const gameId = state?.gameId;
+  const initialPlayerId = state?.playerId ?? null;
+
   const [game, setGame] = useState(null);
-  const [pendingRoll, setPendingRoll] = useState(null); // Stores rolled number waiting for move
-  const [roller, setRoller] = useState(null); // which player rolled last
-  const [token, setSelectedToken] = useState(null);
+  const [diceValue, setDiceValue] = useState(null);
+  const [isRolling, setIsRolling] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [rollCount, setRollCount] = useState(0);
+  const [playerId, setPlayerId] = useState(null);
+  const stompClient = useRef(null);
+  const reconnectTimer = useRef(null);
 
   useEffect(() => {
-    if(paused) return;
-    // Fetch current game state from backend
-    const fetchGame = async () => {
-      const res = await fetch("http://localhost:8080/api/game/state");
-      const data = await res.json();
-      setGame(data);
-    };
-    fetchGame();
-
-    // Auto refresh every 2 seconds
-    const interval = setInterval(fetchGame, 2000);
-    return () => clearInterval(interval);
-  }, [paused]);
-
-  const fetchGameState = async () => {
-    try {
-      const res = await fetch("http://localhost:8080/api/game/state");
-      if(!res.ok) return;
-      const data = await res.json();
-
-      if (game) {
-      for (let playerId in data.lastDiceRolls) {
-        const lastRoll = game.lastDiceRolls?.[playerId]?.rollId;
-        const newRoll = data.lastDiceRolls[playerId].rollId;
-        if (lastRoll !== newRoll) {
-          setRollCount(prev => prev + 1);
-        }
-      }
+    if(!gameId) {
+      toast.error("No gameId provided");
+      return;
     }
 
-      setGame(data);
+    // Create STOMP client backed by SockJS
+    const stomp = new Client({
+      // We use webSocketFactory to point to SockJS (server endpoint /ws assumed)
+      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+      reconnectDelay: 5000,
+      debug: () => {}, // silence debug in console
+      onConnect: (frame) => {
+        console.log("STOMP connected", frame);
+        // subscribe to the topic for this game
+        stomp.subscribe(`/topic/game/${gameId}`, (msg) => {
+          try {
+            const payload = JSON.parse(msg.body);
+            setGame(payload);
+            // Persist any server-provided playerId for this user (only if we can easily detect)
+            tryDetectAndStorePlayerId(payload);
 
-      // Check for game over immediately
-      const finishedPlayers = data.players.filter(p => p.tokens.every(t => t.finished));
-      if(finishedPlayers.length >= data.players.length - 1) {
-        toast.success("🏁 Game Over!");
-        console.log("🏁 Game Over! Navigating to results...");
-        localStorage.setItem("FinalGame", JSON.stringify(data));
-        navigate("/results");
+            // Update diceValue if it's your turn and the last dice roll is new
+            setTimeout(() => {
+              if(playerId) {
+                const lastRoll = payload.lastDiceRolls?.[playerId];
+                if(payload.players[payload.currentTurn]?.playerId === playerId && lastRoll != null) {
+                  setDiceValue(lastRoll);
+                }
+              }
+            }, 50);
+          } catch (err) {
+            console.log("Failed to parse STOMP message", err);
+          }
+        });
+
+        // fetch latest state immediately after connecting
+        fetchGameState();
+      },
+      onStompError: (frame) => {
+        console.error("STOMP error:", frame);
+      },
+      onWebSocketClose: () => {
+        console.log("WebSocket closed");
+      },
+    });
+
+    stomp.activate();
+    stompClient.current = stomp;
+
+    return () => {
+      try {
+        stomp.deactivate();
+      } catch (err) {
+        console.error(err);
       }
+      if(reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+      }
+    };
+
+  }, [gameId]);
+
+  useEffect(() => {
+    if (!playerId || !game) return;
+
+    const currentPlayer = game.players[game.currentTurn];
+    const lastRoll = game.lastDiceRolls?.[playerId];
+
+    // Only set diceValue if it's our turn and a roll exists
+    if (currentPlayer?.playerId === playerId && lastRoll != null) {
+      setDiceValue(lastRoll.value);
+    } else {
+      setDiceValue(null); // reset if turn changed or no roll
+    }
+  }, [playerId, game]);
+
+
+  useEffect(() => {
+    localStorage.removeItem("playerId");
+  }, []);
+
+  useEffect(() => {
+    if(!game || !playerId) return;
+
+    const current = game.players[game.currentTurn];
+    if(current?.playerId === playerId) {
+      setDiceValue(null);
+    }
+  }, [game?.currentTurn, playerId] );
+
+  const fetchGameState = async () => {
+    if(!gameId) return;
+    try {
+      const res = await fetch(`${API_BASE}/state?gameId=${encodeURIComponent(gameId)}`);
+      if(!res.ok) {
+        console.warn("Failed to fetch game state", await res.text());
+        return;
+      }
+      const data = await res.json();
+      setGame(data);
+      tryDetectAndStorePlayerId(data);
     } catch (err) {
       console.log("Error fetching game state:", err);
     }
   }
 
-  useEffect(() => {
-    if(paused) return;
+  // Try to detect which player corresponds to the current client and store playerId in localStorage
+  const tryDetectAndStorePlayerId = (gameState) => {
+    if(!gameState || !gameState.players || playerId) return;
 
-    const checkGameOver = async () => {
-      try {
-        const res = await fetch("http://localhost:8080/api/game/state");
-        if(!res.ok) return;
+    // 1. If Initial playerId was provided, nothing to do
+    // 2. Try to match by email if server includes it (server currently doesn't include email in Player)
+    // 3. Try to match by Clerk User full name (best effort)
+    // 4. If only one human player exists, assume it's this player
 
-        const gameState = await res.json();
-        if(!gameState || !gameState.players) return;
-
-        // Count how many players have finished all four tokens
-        const finishedPlayers = gameState.players.filter(
-          p => p.tokens.every(t => t.finished)
-        );
-
-        if(finishedPlayers.length >= gameState.players.length - 1) {
-          console.log("🏁 Game Over! Navigating to results...");
-          localStorage.setItem("FinalGame", JSON.stringify(gameState));
-          navigate("/results");
-        }
-      } catch (err) {
-        console.error("Error checking winner:", err);
-      }
-    };
-
-    // Check every 2 seconds
-    const interval = setInterval(checkGameOver, 2000);
-    return () => clearInterval(interval);
-  }, [navigate, paused]);
-
-  const pause = async ()=> {
-    try {
-      const res = await fetch(`http://localhost:8080/api/game/${paused ? 'resume' : 'pause'}`, {
-        method: "POST"
-      });
-      if(res.ok){
-        setPaused(prev => !prev);
-        toast[paused ? "success" : "warning"](`Game ${paused ? 'resumed' : 'paused'}`);
-      }
-      
-    } catch (err) {
-      toast.error("Game paused", err);
-    }
-    
-  }
-
-  // Player rolls dice, just store the result, don't move yet
-  const handleDiceRoll = async(player, dice) => {
-    if(paused) {
-      toast.error("Game is paused!");
+    // If state included playerId from navigation, keep it
+    if(initialPlayerId) {
+      setPlayerId(initialPlayerId);
+      localStorage.setItem("playerId", initialPlayerId);
       return;
     }
 
-    if(!player || !dice) return;
-    console.log(`🎲 ${player.name} rolled ${dice}`);
-    setPendingRoll(dice);
-    setRoller(player);
-    setRollCount(prev => prev + 1);
+    // heuristic: match by player name using Clerk User info
+    const nameCandidates = [];
+    if(user?.fullName) nameCandidates.push(user.fullName);
+    if(user?.firstName) nameCandidates.push(user.firstName);
+    if(user?.lastName) nameCandidates.push(user.lastName);
 
-    await fetchGameState();
+    // find non-bot players first
+    const humans = gameState.players?.filter((p) => !p.isBot) ?? [];
+
+    // 1. Exact name match
+    for(const candidate of nameCandidates) {
+      const found = humans.find((p) => p.name && p.name.toLowerCase() === candidate.toLowerCase());
+      if(found) {
+        setPlayerId(found.playerId);
+        localStorage.setItem("playerId", found.playerId);
+        return;
+      }
+    }
+
+    // 2. partial name match (first name)
+    if(user?.firstName) {
+      const found = humans.find((p) => p.name && p.name.toLowerCase().includes(user.firstName.toLowerCase()));
+      if(found) {
+        setPlayerId(found.playerId);
+        localStorage.setItem("playerId", found.playerId);
+        return;
+      }
+    }
+
+    // 3. Only one human, assume that's the player
+    if(humans.length === 1) {
+      setPlayerId(humans[0].playerId);
+      localStorage.setItem("playerId", humans[0].playerId);
+      return;
+    }
+
+    // Otherwise, leave unset; user should have been given their playerId by creation/join flow
+  }
+  useEffect(() => {
+    if(!game) return;
+    const finishedPlayers = game.players?.filter((p) => p.tokens?.every((t) => t.finished)) ?? [];
+    const inPlayCount = (game.players?.length ?? 0) - finishedPlayers.length;
+    if(game.players && inPlayCount <= 1) {
+      localStorage.setItem("FinalGame", JSON.stringify(game));
+      navigate("/results", { state: {gameId: game.gameId} });
+    }
+  }, [game, navigate]);
+
+  // Player rolls dice, just store the result, don't move yet
+  const handleDiceRoll = async () => {
+    if(!playerId) {
+      toast.error("Player identity unknown. Rejoin via lobby so the client can record your playerId.");
+      return;
+    }
+    if(!game) {
+      toast.error("Game not loaded");
+      return;
+    }
+    // Guard against double roll
+    if(diceValue !== null) {
+      console.warn("Dice already rolled locally, skipping API call");
+      return;
+    }
+
+    // Verify it's your turn
+    // const current = game.players?.[game.currentTurn];
+    // if(!current || current.playerId !== playerId) {
+    //   toast.error("It's not your turn");
+    //   return;
+    // }
+
+   await fetchGameState();
   };
 
   // When token clicked on board
   const handleTokenSelect = async ({playerColor, tokenId}) => {
-    if(paused) {
-      toast.error("Game is paused!");
+    if(!playerId) {
+      toast.error("Player identity unknown.");
+      return;
+    }
+    if(!game) {
+      toast.error("Game not loaded");
       return;
     }
 
-    if(!game || !pendingRoll) {
-      toast.error("Please roll the dice first!");
+    // Require diceValue present for this client (server enforces rules anyway)
+    if(!diceValue) {
+      toast.error("Please roll the dice first");
       return;
     }
 
-    const player = game.players.find((p) => p.color === playerColor);
-    if(!player || player.playerId !== roller?.playerId) {
+    // Ensure it's the player's turn
+    const current = game.players?.[game.currentTurn];
+    if(!current || current.playerId !== playerId) {
       toast.error("Not your turn!");
       return;
     }
 
     try {
-      const moveRes = await fetch(
-        `http://localhost:8080/api/game/move?playerId=${player.playerId}&tokenId=${tokenId}&steps=${pendingRoll}`,
-        { method: "POST" }
-      );
+      const url = `${API_BASE}/move?playerId=${encodeURIComponent(playerId)}&tokenId=${encodeURIComponent(tokenId)}&steps=${encodeURIComponent(diceValue)}`;
+      const res = await fetch(url, { method: "POST" });
 
-      if(!moveRes.ok) {
-        console.error("Failed to move token");
-        return;
+      if(!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Move failed");
       }
 
-      const updatedGame = await moveRes.json();
-      setGame(updatedGame); // Refresh board instantly
-      setPendingRoll(null);
-      setRoller(null);
-      setSelectedToken(null);
+      const payload = await res.json();
+      const updatedGame = payload?.game ?? payload;
+      if(updatedGame) {
+        setGame(updatedGame); // Refresh board instantly
+      } 
+      setDiceValue(null);
     } catch (err) {
       console.error("Error moving token: ", err);
+      toast.error(err.message || "Move failed");
     }
+  };
+
+  const togglePause = async ()=> {
+    if(!gameId) return;
+    try {
+      const action = paused ? "resume" : "pause";
+      const res = await fetch(`${API_BASE}/${action}?gameId=${encodeURIComponent(gameId)}`, {
+        method: "POST"
+      });
+      if(!res.ok){
+        const txt = await res.text();
+        throw new Error(txt || `${action} failed`);
+      }
+      setPaused(prev => !prev);
+      if(paused) {
+        toast.success("Game resumed");
+      } else {
+        toast.error("Game paused");
+      }
+    } catch (err) {
+      console.error("Pause/resume error:", err);
+      toast.error(err.message || "Pause/resume failed");
+    }
+  };
+
+  const isMyTurn = () => {
+    if(!game || !playerId) return false;
+    const current = game.players?.[game.currentTurn];
+    return current && current.playerId === playerId;
   }
+
+  const getPlayerByColor = (color) => game?.players?.find((p) => p.color === color);
+
+  // Initial load of state
+  useEffect(() => {
+    if(gameId) {
+      fetchGameState();
+    }
+
+  }, [gameId]);
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
@@ -180,7 +324,7 @@ const GamePlay = () => {
             <Home className="w-4 h-4" />
             Menu
           </button>
-          <button onClick={()=> pause()} className="px-4 h-10 bg-amber-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
+          <button onClick={()=> togglePause()} className="px-4 h-10 bg-amber-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <Pause className="w-4 h-4" />
             {paused ? "Resume" : "Pause"}
           </button>
@@ -200,13 +344,17 @@ const GamePlay = () => {
         )}
         {/* Center Game Board */}
         <div className="w-[500px] h-[500px] flex items-center justify-center">
-          {game && <GameBoard 
-          players={game.players}
-          currentPlayer={game.players[game.currentTurn]}
-          onMove={(data) => handleTokenSelect(data)}
-          selectable={!!pendingRoll} // allow selecting token if dice is rolled
-          pendingRoll={pendingRoll}
-          />}
+          {game ? ( 
+            <GameBoard 
+              players={game.players}
+              currentPlayer={game.players[game.currentTurn]}
+              onMove={(data) => handleTokenSelect(data)}
+              selectable={!!diceValue /*&& isMyTurn()*/} // allow selecting token if dice is rolled
+              pendingRoll={diceValue}
+            />
+          ) : (
+            <div>Loading game...</div>
+          )}
         </div>
 
         {/* Player Positions */}
@@ -216,7 +364,7 @@ const GamePlay = () => {
           { color: "yellow", pos: "bottom-5 right-5 items-end text-right" },
           { color: "green", pos: "bottom-5 left-5 items-start text-left" },
         ].map((slot) => {
-          const player = game?.players?.find((p) => p.color === slot.color);
+          const player = getPlayerByColor(slot.color);
           if (!player) return null;
 
           const isActive = game.currentTurn === game.players.findIndex((p) => p.color === slot.color);
@@ -236,11 +384,17 @@ const GamePlay = () => {
                 name={player.name}
                 player={player}
                 diceRoll={game?.lastDiceRolls?.[player.playerId] ?? null}
-                onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
+                onDiceRoll={
+                  player.playerId == playerId && !player.isBot
+                    ? handleDiceRoll
+                    : undefined
+                }
+                // disabled={!isActive || player.isBot || !isMyTurn() || !!diceValue}
+                // isRolling={isRolling}
               />
-              {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
+              {isActive && !player.isBot && diceValue && isMyTurn() && (
                 <div className='text-sm text-gray-600'>
-                  Rolled: <b>{pendingRoll}</b> - Select a Token to move
+                  Rolled: <b>{diceValue}</b> - Select a Token to move
                 </div>
               )}
             </div>

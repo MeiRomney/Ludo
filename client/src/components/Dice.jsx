@@ -5,7 +5,7 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
   const [rolling, setRolling] = useState(false);
   const [displayValue, setDisplayValue] = useState(diceRoll?.value?? null);
   const rollSound = useRef(null);
-  const skipNextEffect = useRef(false);
+  const callInProgress = useRef(false);
 
   useEffect(() => {
     rollSound.current = new Audio("/sounds/diceRoll.mp3");
@@ -14,8 +14,7 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
 
   // Props: value = dice value, rollCount = increments each roll
   useEffect(() => {
-    if (!diceRoll || skipNextEffect.current) {
-      skipNextEffect.current = false;
+    if (!diceRoll || diceRoll.value === undefined) {
       return;
     } 
     
@@ -31,19 +30,23 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
     const timer = setTimeout(() => {
       setDisplayValue(diceRoll.value);
       setRolling(false);
+      callInProgress.current = false;
     }, 600);
     return () => clearTimeout(timer);
   }, [diceRoll?.rollId]);
 
-
   const rollDice = async () => {
-    if(!player || !player.playerId) {
-      console.error("❌ Missing player in Dice component!", player);
-      return;
-    }
-
+    // if(!player || !player.playerId) {
+    //   console.error("❌ Missing player in Dice component!", player);
+    //   return;
+    // }
+    // if(rolling || callInProgress.current) return;
+    // if(displayValue !== null) return;
+    
+    callInProgress.current = true;
     setRolling(true);
-    skipNextEffect.current = true;
+
+    
 
     try {
       if(rollSound.current) {
@@ -69,12 +72,13 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
       }
 
       const data = await res.json();
+      console.log(data.value);
 
       // Small delay to let animation play before showing new dots
       setTimeout(() => {
-        setDisplayValue(data);
+        setDisplayValue(data.value);
         if(onDiceRoll) {
-          onDiceRoll(data);
+          onDiceRoll(data.value);
         } 
         setRolling(false);
       }, 600);
