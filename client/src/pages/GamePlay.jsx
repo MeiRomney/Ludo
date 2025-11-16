@@ -24,6 +24,11 @@ const GamePlay = () => {
   const [isRolling, setIsRolling] = useState(false);
   const [paused, setPaused] = useState(false);
   const [playerId, setPlayerId] = useState(null);
+  const [pendingRoll, setPendingRoll] = useState(null); // Stores rolled number waiting for move
+  const [roller, setRoller] = useState(null); // which player rolled last
+  const [token, setSelectedToken] = useState(null);
+  const [rollCount, setRollCount] = useState(0);
+
   const stompClient = useRef(null);
   const reconnectTimer = useRef(null);
 
@@ -50,14 +55,14 @@ const GamePlay = () => {
             tryDetectAndStorePlayerId(payload);
 
             // Update diceValue if it's your turn and the last dice roll is new
-            setTimeout(() => {
-              if(playerId) {
-                const lastRoll = payload.lastDiceRolls?.[playerId];
-                if(payload.players[payload.currentTurn]?.playerId === playerId && lastRoll != null) {
-                  setDiceValue(lastRoll);
-                }
-              }
-            }, 50);
+            // setTimeout(() => {
+            //   if(playerId) {
+            //     const lastRoll = payload.lastDiceRolls?.[playerId];
+            //     if(payload.players[payload.currentTurn]?.playerId === playerId && lastRoll != null) {
+            //       setDiceValue(lastRoll);
+            //     }
+            //   }
+            // }, 50);
           } catch (err) {
             console.log("Failed to parse STOMP message", err);
           }
@@ -109,15 +114,6 @@ const GamePlay = () => {
     localStorage.removeItem("playerId");
   }, []);
 
-  useEffect(() => {
-    if(!game || !playerId) return;
-
-    const current = game.players[game.currentTurn];
-    if(current?.playerId === playerId) {
-      setDiceValue(null);
-    }
-  }, [game?.currentTurn, playerId] );
-
   const fetchGameState = async () => {
     if(!gameId) return;
     try {
@@ -127,6 +123,17 @@ const GamePlay = () => {
         return;
       }
       const data = await res.json();
+
+      if (game) {
+        for (let playerId in data.lastDiceRolls) {
+          const lastRoll = game.lastDiceRolls?.[playerId]?.rollId;
+          const newRoll = data.lastDiceRolls[playerId].rollId;
+          if (lastRoll !== newRoll) {
+            setRollCount(prev => prev + 1);
+          }
+        }
+      }
+
       setGame(data);
       tryDetectAndStorePlayerId(data);
     } catch (err) {
@@ -199,48 +206,24 @@ const GamePlay = () => {
   }, [game, navigate]);
 
   // Player rolls dice, just store the result, don't move yet
-  const handleDiceRoll = async () => {
-    if(!playerId) {
-      toast.error("Player identity unknown. Rejoin via lobby so the client can record your playerId.");
-      return;
-    }
-    if(!game) {
-      toast.error("Game not loaded");
-      return;
-    }
-    // Guard against double roll
-    if(diceValue !== null) {
-      console.warn("Dice already rolled locally, skipping API call");
+  const handleDiceRoll = async (player, dice) => {
+    if(paused) {
+      toast.error("Game is paused!");
       return;
     }
 
-    // Verify it's your turn
-    // const current = game.players?.[game.currentTurn];
-    // if(!current || current.playerId !== playerId) {
-    //   toast.error("It's not your turn");
-    //   return;
-    // }
+    if(!player || !dice) return;
+    console.log(`🎲 ${player.name} rolled ${dice}`);
+    setPendingRoll(dice);
+    setRoller(player);
+    setRollCount(prev => prev + 1);
+
 
    await fetchGameState();
   };
 
   // When token clicked on board
   const handleTokenSelect = async ({playerColor, tokenId}) => {
-    if(!playerId) {
-      toast.error("Player identity unknown.");
-      return;
-    }
-    if(!game) {
-      toast.error("Game not loaded");
-      return;
-    }
-
-    // Require diceValue present for this client (server enforces rules anyway)
-    if(!diceValue) {
-      toast.error("Please roll the dice first");
-      return;
-    }
-
     // Ensure it's the player's turn
     const current = game.players?.[game.currentTurn];
     if(!current || current.playerId !== playerId) {
@@ -257,12 +240,11 @@ const GamePlay = () => {
         throw new Error(txt || "Move failed");
       }
 
-      const payload = await res.json();
-      const updatedGame = payload?.game ?? payload;
-      if(updatedGame) {
-        setGame(updatedGame); // Refresh board instantly
-      } 
-      setDiceValue(null);
+      const updatedGame = await res.json();
+      setGame(updatedGame); // Refresh board instantly
+      setPendingRoll(null);
+      setRoller(null);
+      setSelectedToken(null);
     } catch (err) {
       console.error("Error moving token: ", err);
       toast.error(err.message || "Move failed");
@@ -349,8 +331,8 @@ const GamePlay = () => {
               players={game.players}
               currentPlayer={game.players[game.currentTurn]}
               onMove={(data) => handleTokenSelect(data)}
-              selectable={!!diceValue /*&& isMyTurn()*/} // allow selecting token if dice is rolled
-              pendingRoll={diceValue}
+              selectable={!!pendingRoll /*&& isMyTurn()*/} // allow selecting token if dice is rolled
+              pendingRoll={pendingRoll}
             />
           ) : (
             <div>Loading game...</div>
@@ -384,13 +366,8 @@ const GamePlay = () => {
                 name={player.name}
                 player={player}
                 diceRoll={game?.lastDiceRolls?.[player.playerId] ?? null}
-                onDiceRoll={
-                  player.playerId == playerId && !player.isBot
-                    ? handleDiceRoll
-                    : undefined
-                }
-                // disabled={!isActive || player.isBot || !isMyTurn() || !!diceValue}
-                // isRolling={isRolling}
+                onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
+                disabled={!isActive || player.isBot || !isMyTurn() /*|| !!diceValue*/}
               />
               {isActive && !player.isBot && diceValue && isMyTurn() && (
                 <div className='text-sm text-gray-600'>
