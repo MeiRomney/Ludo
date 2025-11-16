@@ -53,9 +53,40 @@ const GamePlay = () => {
     stompClient.current = stomp;
 
     return () => {
-      try { stomp.deactivate(); } catch {}
+      try { stomp.deactivate(); } catch { /* empty */ }
     };
   }, [gameId]);
+
+  useEffect(() => {
+    if(paused) return;
+
+    const checkGameOver = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/state?gameId=${gameId}`);
+        if(!res.ok) return;
+
+        const gameState = await res.json();
+        if(!gameState || !gameState.players) return;
+
+        // Count how many players have finished all four tokens
+        const finishedPlayers = gameState.players.filter(
+          p => p.tokens.every(t => t.finished)
+        );
+
+        if(finishedPlayers.length >= gameState.players.length - 1) {
+          console.log("🏁 Game Over! Navigating to results...");
+          localStorage.setItem("FinalGame", JSON.stringify(gameState));
+          navigate("/results");
+        }
+      } catch (err) {
+        console.error("Error checking winner:", err);
+      }
+    };
+
+    // Check every 2 seconds
+    const interval = setInterval(checkGameOver, 2000);
+    return () => clearInterval(interval);
+  }, [navigate, paused]);
 
   // ---------------------------
   // Fetch Game State (used on actions)
@@ -69,12 +100,12 @@ const GamePlay = () => {
       setGame(data);
 
       // AUTO NAVIGATE ON GAME OVER
-      const finishedPlayers = data.players.filter(p => p.tokens.every(t => t.finished));
-      if (finishedPlayers.length >= data.players.length - 1) {
-        toast.success("🏁 Game Over!");
-        localStorage.setItem("FinalGame", JSON.stringify(data));
-        navigate("/results", { state: { gameId } });
-      }
+      // const finishedPlayers = data.players.filter(p => p.tokens.every(t => t.finished));
+      // if (finishedPlayers.length >= data.players.length - 1) {
+      //   toast.success("🏁 Game Over!");
+      //   localStorage.setItem("FinalGame", JSON.stringify(data));
+      //   navigate("/results", { state: { gameId } });
+      // }
     } catch (err) {
       console.error("fetchGameState() error:", err);
     }
@@ -93,7 +124,7 @@ const GamePlay = () => {
         toast[paused ? "success" : "warning"](`Game ${paused ? "resumed" : "paused"}`);
       }
     } catch (err) {
-      toast.error("Pause/resume error");
+      toast.error("Game paused");
       console.log(err);
     }
   };
@@ -232,7 +263,7 @@ const GamePlay = () => {
                 player={player}
                 diceRoll={game?.lastDiceRolls?.[player.playerId]}
                 onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
-                disabled={!isActive || player.isBot || !isMyTurn()}
+                disabled={!isActive || player.isBot || !isMyTurn() || game?.diceRolledThisTurn}
               />
 
               {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (

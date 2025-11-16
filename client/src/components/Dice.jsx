@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
+const Dice = ({ name, player, diceRoll, onDiceRoll, disabled }) => {
 
   const [rolling, setRolling] = useState(false);
   const [displayValue, setDisplayValue] = useState(diceRoll?.value?? null);
@@ -121,7 +121,7 @@ const Dice = ({ name, player, diceRoll, onDiceRoll }) => {
         <div className={`w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md grid grid-cols-3 grid-rows-3 gap-1 p-2 cursor-pointer ${
             rolling ? 'animate-diceRoll' : 'hover:scale-105 transition-transform'
           }`}
-          onClick={!rolling && !player.isBot ? rollDice : undefined}
+          onClick={!rolling && !player.isBot && !disabled ? rollDice : undefined}
         >
             {/* <div className='text-2xl font-bold text-gray-700'>
               {value ?? '-'}
