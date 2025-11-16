@@ -36,17 +36,15 @@ const Dice = ({ name, player, diceRoll, onDiceRoll, disabled }) => {
   }, [diceRoll?.rollId]);
 
   const rollDice = async () => {
-    // if(!player || !player.playerId) {
-    //   console.error("❌ Missing player in Dice component!", player);
-    //   return;
-    // }
-    // if(rolling || callInProgress.current) return;
+    if(!player || !player.playerId) {
+      console.error("❌ Missing player in Dice component!", player);
+      return;
+    }
+    if(rolling || callInProgress.current) return;
     // if(displayValue !== null) return;
     
     callInProgress.current = true;
-    setRolling(true);
-
-    
+    setRolling(true); 
 
     try {
       if(rollSound.current) {
