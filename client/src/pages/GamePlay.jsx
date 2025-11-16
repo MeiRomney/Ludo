@@ -21,7 +21,9 @@ const GamePlay = () => {
 
   const [game, setGame] = useState(null);
   const [diceValue, setDiceValue] = useState(null);
-  const [isRolling, setIsRolling] = useState(false);
+  const [pendingRoll, setPendingRoll] = useState(null);
+  const [pendingRollId, setPendingRollId] = useState(null);
+  const [lastProcessedTurn, setLastProcessedTurn] = useState(null);
   const [paused, setPaused] = useState(false);
   const [playerId, setPlayerId] = useState(null);
   const stompClient = useRef(null);
@@ -50,14 +52,14 @@ const GamePlay = () => {
             tryDetectAndStorePlayerId(payload);
 
             // Update diceValue if it's your turn and the last dice roll is new
-            setTimeout(() => {
-              if(playerId) {
-                const lastRoll = payload.lastDiceRolls?.[playerId];
-                if(payload.players[payload.currentTurn]?.playerId === playerId && lastRoll != null) {
-                  setDiceValue(lastRoll);
-                }
-              }
-            }, 50);
+            // setTimeout(() => {
+            //   if(playerId) {
+            //     const lastRoll = payload.lastDiceRolls?.[playerId];
+            //     if(payload.players[payload.currentTurn]?.playerId === playerId && lastRoll != null) {
+            //       setDiceValue(lastRoll.value);
+            //     }
+            //   }
+            // }, 50);
           } catch (err) {
             console.log("Failed to parse STOMP message", err);
           }
@@ -93,30 +95,43 @@ const GamePlay = () => {
   useEffect(() => {
     if (!playerId || !game) return;
 
+    const currentTurn = game.currentTurn;
     const currentPlayer = game.players[game.currentTurn];
-    const lastRoll = game.lastDiceRolls?.[playerId];
+    const myTurn = currentPlayer?.playerId === playerId;
+    const lastRollObj = game.lastDiceRolls?.[playerId]; // { value, rollId }
 
-    // Only set diceValue if it's our turn and a roll exists
-    if (currentPlayer?.playerId === playerId && lastRoll != null) {
-      setDiceValue(lastRoll.value);
-    } else {
-      setDiceValue(null); // reset if turn changed or no roll
+    // If it's NOT your turn → clear local state
+    if (!myTurn) {
+      setPendingRoll(null);
+      setPendingRollId(null);
+      setDiceValue(null);
+      setLastProcessedTurn(null);
+      return;
     }
-  }, [playerId, game]);
+
+    // If you HAVE a new roll from server
+    if (lastRollObj && lastProcessedTurn !== currentTurn /*&& lastRollObj.rollId !== pendingRollId*/) {
+      setDiceValue(lastRollObj.value);
+      setPendingRoll(lastRollObj.value);
+      setPendingRollId(lastRollObj.rollId);
+      setLastProcessedTurn(currentTurn)
+    }
+
+  }, [playerId, game?.currentTurn, game?.lastDiceRolls]);
 
 
   useEffect(() => {
     localStorage.removeItem("playerId");
   }, []);
 
-  useEffect(() => {
-    if(!game || !playerId) return;
+  // useEffect(() => {
+  //   if(!game || !playerId) return;
 
-    const current = game.players[game.currentTurn];
-    if(current?.playerId === playerId) {
-      setDiceValue(null);
-    }
-  }, [game?.currentTurn, playerId] );
+  //   const current = game.players[game.currentTurn];
+  //   if(current?.playerId === playerId) {
+  //     setDiceValue(null);
+  //   }
+  // }, [game?.currentTurn, playerId] );
 
   const fetchGameState = async () => {
     if(!gameId) return;
@@ -200,46 +215,26 @@ const GamePlay = () => {
 
   // Player rolls dice, just store the result, don't move yet
   const handleDiceRoll = async () => {
-    if(!playerId) {
-      toast.error("Player identity unknown. Rejoin via lobby so the client can record your playerId.");
-      return;
-    }
-    if(!game) {
-      toast.error("Game not loaded");
-      return;
-    }
-    // Guard against double roll
-    if(diceValue !== null) {
-      console.warn("Dice already rolled locally, skipping API call");
+    if(!isMyTurn()) {
+      toast.error("It's not your turn");
       return;
     }
 
-    // Verify it's your turn
-    // const current = game.players?.[game.currentTurn];
-    // if(!current || current.playerId !== playerId) {
-    //   toast.error("It's not your turn");
-    //   return;
-    // }
-
+    if(pendingRoll !== null) return;
+  
    await fetchGameState();
+   // setDiceValue(null);
   };
 
   // When token clicked on board
-  const handleTokenSelect = async ({playerColor, tokenId}) => {
-    if(!playerId) {
-      toast.error("Player identity unknown.");
-      return;
-    }
-    if(!game) {
-      toast.error("Game not loaded");
-      return;
-    }
-
+  const handleTokenSelect = async ({ tokenId }) => {
     // Require diceValue present for this client (server enforces rules anyway)
-    if(!diceValue) {
+    if(!pendingRoll) {
       toast.error("Please roll the dice first");
       return;
     }
+
+    const steps = pendingRoll;
 
     // Ensure it's the player's turn
     const current = game.players?.[game.currentTurn];
@@ -249,7 +244,7 @@ const GamePlay = () => {
     }
 
     try {
-      const url = `${API_BASE}/move?playerId=${encodeURIComponent(playerId)}&tokenId=${encodeURIComponent(tokenId)}&steps=${encodeURIComponent(diceValue)}`;
+      const url = `${API_BASE}/move?playerId=${encodeURIComponent(playerId)}&tokenId=${encodeURIComponent(tokenId)}&steps=${encodeURIComponent(steps)}`;
       const res = await fetch(url, { method: "POST" });
 
       if(!res.ok) {
@@ -257,12 +252,17 @@ const GamePlay = () => {
         throw new Error(txt || "Move failed");
       }
 
-      const payload = await res.json();
-      const updatedGame = payload?.game ?? payload;
-      if(updatedGame) {
-        setGame(updatedGame); // Refresh board instantly
-      } 
-      setDiceValue(null);
+      // const payload = await res.json();
+      // const updatedGame = payload?.game ?? payload;
+      // if(updatedGame) {
+      //   setGame(updatedGame); // Refresh board instantly
+      // }
+      const updatedGame = await res.json();
+      setGame(updatedGame);
+
+      setPendingRoll(null);
+      setPendingRollId(null);
+      setDiceValue(null); 
     } catch (err) {
       console.error("Error moving token: ", err);
       toast.error(err.message || "Move failed");
@@ -305,7 +305,6 @@ const GamePlay = () => {
     if(gameId) {
       fetchGameState();
     }
-
   }, [gameId]);
 
   return (
@@ -349,7 +348,7 @@ const GamePlay = () => {
               players={game.players}
               currentPlayer={game.players[game.currentTurn]}
               onMove={(data) => handleTokenSelect(data)}
-              selectable={!!diceValue /*&& isMyTurn()*/} // allow selecting token if dice is rolled
+              selectable={diceValue != null && isMyTurn()} // allow selecting token if dice is rolled
               pendingRoll={diceValue}
             />
           ) : (
@@ -383,14 +382,14 @@ const GamePlay = () => {
               <Dice
                 name={player.name}
                 player={player}
+                //diceRoll={diceValue}
                 diceRoll={game?.lastDiceRolls?.[player.playerId] ?? null}
                 onDiceRoll={
-                  player.playerId == playerId && !player.isBot
+                  player.playerId === playerId && !player.isBot
                     ? handleDiceRoll
                     : undefined
                 }
-                // disabled={!isActive || player.isBot || !isMyTurn() || !!diceValue}
-                // isRolling={isRolling}
+                disabled={!isActive || player.isBot || !isMyTurn() || game?.diceRolledThisTurn === true || pendingRoll !== null}
               />
               {isActive && !player.isBot && diceValue && isMyTurn() && (
                 <div className='text-sm text-gray-600'>
