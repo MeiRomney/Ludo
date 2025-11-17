@@ -16,12 +16,14 @@ const GamePlay = () => {
   const { state } = useLocation();
 
   const gameId = state?.gameId;
-  const [playerId, setPlayerId] = useState(state?.playerId ?? localStorage.getItem("playerId") ?? null);
-
+  const [playerId] = useState(state?.playerId);
+  // const [playerId, setPlayerId] = useState(state?.playerId ?? localStorage.getItem("playerId") ?? null);
   const [game, setGame] = useState(null);
   const [pendingRoll, setPendingRoll] = useState(null);
   const [roller, setRoller] = useState(null);
   const [paused, setPaused] = useState(false);
+
+  const vsComputer = state?.mode === "computer";
 
   const stompClient = useRef(null);
 
@@ -40,7 +42,7 @@ const GamePlay = () => {
           try {
             const updated = JSON.parse(msg.body);
 
-            if(!updated) {
+            if(!updated || updated.ended) {
               localStorage.removeItem("FinalGame");
               toast("Game ended", { icon: "🛑" });
               navigate("/");
@@ -74,7 +76,7 @@ const GamePlay = () => {
         if(!res.ok) return;
 
         const gameState = await res.json();
-        if(!gameState || !gameState.players) return;
+        if(!gameState || !gameState.players || !gameState.started) return;
 
         // Count how many players have finished all four tokens
         const finishedPlayers = gameState.players.filter(
@@ -140,7 +142,7 @@ const GamePlay = () => {
   const isMyTurn = () => {
     if (!game || !playerId) return false;
     const current = game.players?.[game.currentTurn];
-    return current?.playerId === playerId;
+    return String(current?.playerId) === String(playerId);
   };
 
   // ---------------------------
@@ -283,7 +285,7 @@ const GamePlay = () => {
                 player={player}
                 diceRoll={game?.lastDiceRolls?.[player.playerId]}
                 onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
-                disabled={!isActive || player.isBot || !isMyTurn() || game?.diceRolledThisTurn}
+                disabled={!isActive || player.isBot || (vsComputer && !isMyTurn()) || game?.diceRolledThisTurn}
               />
 
               {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
