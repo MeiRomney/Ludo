@@ -8,7 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
-const API_BASE = "http://localhost:8080/api/game";
+const API_BASE = "http://localhost:8080/";
 
 const GamePlay = () => {
 
@@ -34,7 +34,7 @@ const GamePlay = () => {
     if (!gameId) return;
 
     const stomp = new Client({
-      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+      webSocketFactory: () => new SockJS(`${API_BASE}ws`),
       reconnectDelay: 5000,
       debug: () => {},
       onConnect: () => {
@@ -72,7 +72,7 @@ const GamePlay = () => {
 
     const checkGameOver = async () => {
       try {
-        const res = await fetch(`${API_BASE}/state?gameId=${gameId}`);
+        const res = await fetch(`${API_BASE}api/game/state?gameId=${gameId}`);
         if(!res.ok) return;
 
         const gameState = await res.json();
@@ -103,7 +103,7 @@ const GamePlay = () => {
   // ---------------------------
   const fetchGameState = async () => {
     try {
-      const res = await fetch(`${API_BASE}/state?gameId=${encodeURIComponent(gameId)}`);
+      const res = await fetch(`${API_BASE}api/game/state?gameId=${encodeURIComponent(gameId)}`);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -127,7 +127,7 @@ const GamePlay = () => {
   const togglePause = async () => {
     try {
       const action = paused ? "resume" : "pause";
-      const res = await fetch(`${API_BASE}/${action}?gameId=${gameId}`, { method: "POST" });
+      const res = await fetch(`${API_BASE}api/game/${action}?gameId=${gameId}`, { method: "POST" });
 
       if (res.ok) {
         setPaused(prev => !prev);
@@ -173,7 +173,7 @@ const GamePlay = () => {
 
     try {
       const res = await fetch(
-        `${API_BASE}/move?playerId=${player.playerId}&tokenId=${tokenId}&steps=${pendingRoll}`,
+        `${API_BASE}api/game/move?playerId=${player.playerId}&tokenId=${tokenId}&steps=${pendingRoll}`,
         { method: "POST" }
       );
 
@@ -202,7 +202,7 @@ const GamePlay = () => {
     if(!gameId) return navigate("/");
 
     try {
-      await fetch(`${API_BASE}/end?gameId=${gameId}`, { method: "POST" });
+      await fetch(`${API_BASE}api/game/end?gameId=${gameId}`, { method: "POST" });
     } catch(err) {
       console.log("Failed to end game", err)
     }

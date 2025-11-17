@@ -4,6 +4,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 
+const API_BASE = "http://localhost:8080/";
+
 const OnlineLobbyModal = ({ onClose }) => {
   const { user } = useUser();
   const navigate = useNavigate();
@@ -20,7 +22,7 @@ const OnlineLobbyModal = ({ onClose }) => {
 
   const fetchWaitingGames = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/game/waiting');
+      const res = await fetch(`${API_BASE}api/game/waiting`);
       const data = await res.json();
       setWaitingGames(data);
     } catch (err) {
@@ -31,7 +33,7 @@ const OnlineLobbyModal = ({ onClose }) => {
   const createGame = async () => {
     try {
       const email = user?.primaryEmailAddress?.emailAddress;
-      const res = await fetch(`http://localhost:8080/api/game/create?email=${encodeURIComponent(email)}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}api/game/create?email=${encodeURIComponent(email)}`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to create game');
       const data = await res.json();
 
@@ -55,7 +57,7 @@ const OnlineLobbyModal = ({ onClose }) => {
     if (!gameId) return toast.error('Please enter a Game ID');
     try {
       const email = user?.primaryEmailAddress?.emailAddress;
-      const res = await fetch(`http://localhost:8080/api/game/join?email=${encodeURIComponent(email)}&gameId=${gameId}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}api/game/join?email=${encodeURIComponent(email)}&gameId=${gameId}`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to join game');
       const data = await res.json();
 

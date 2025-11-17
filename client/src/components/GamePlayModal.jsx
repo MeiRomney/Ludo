@@ -5,6 +5,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom'
 import OnlineLobbyModal from './OnlineLobbyModal';
 
+const API_BASE = "http://localhost:8080/";
+
 const GamePlayModal = () => {
 
   const [showOnlineLobby, setShowOnlineLobby] = useState(false);
@@ -21,7 +23,7 @@ const GamePlayModal = () => {
     }
     try {
       const email = user?.primaryEmailAddress?.emailAddress;
-      const res = await fetch(`http://localhost:8080/api/game/start?email=${encodeURIComponent(email)}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}api/game/start?email=${encodeURIComponent(email)}`, { method: 'POST' });
 
       if(!res.ok) throw new Error("Failed to start computer game");
 

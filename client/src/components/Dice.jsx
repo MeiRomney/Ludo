@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+const API_BASE = "http://localhost:8080/";
+
 const Dice = ({ name, player, diceRoll, onDiceRoll, disabled }) => {
 
   const [rolling, setRolling] = useState(false);
@@ -56,7 +58,7 @@ const Dice = ({ name, player, diceRoll, onDiceRoll, disabled }) => {
       setDisplayValue(null);
 
       console.log("Rolling dice for player:", player.playerId);
-      const res = await fetch(`http://localhost:8080/api/game/roll?playerId=${player.playerId}`, {
+      const res = await fetch(`${API_BASE}api/game/roll?playerId=${player.playerId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json"

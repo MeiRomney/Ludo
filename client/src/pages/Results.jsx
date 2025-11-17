@@ -2,6 +2,8 @@ import { Home, RefreshCw, Trophy } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE = "http://localhost:8080/";
+
 const Results = () => {
 
   const navigate = useNavigate();
@@ -12,7 +14,7 @@ const Results = () => {
     const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
     if(!finalGame?.gameId) return;
 
-    fetch(`http://localhost:8080/api/game/results?gameId=${encodeURIComponent(finalGame.gameId)}`)
+    fetch(`${API_BASE}api/game/results?gameId=${encodeURIComponent(finalGame.gameId)}`)
       .then(res => res.json())
       .then(data => {
         console.log("Results fetched: ", data);
@@ -44,7 +46,7 @@ const Results = () => {
     const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
     if(finalGame?.gameId) {
       try {
-        await fetch(`http://localhost:8080/api/game/end?gameId=${encodeURIComponent(finalGame.gameId)}`, { method: "POST" });
+        await fetch(`${API_BASE}api/game/end?gameId=${encodeURIComponent(finalGame.gameId)}`, { method: "POST" });
       } catch(err) {
         console.log("Error ending game:", err);
       }
@@ -57,7 +59,7 @@ const Results = () => {
     const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
     if(finalGame?.gameId) {
       try {
-        await fetch(`http://localhost:8080/api/game/end?gameId=${encodeURIComponent(finalGame.gameId)}`, { method: "POST" });
+        await fetch(`${API_BASE}api/game/end?gameId=${encodeURIComponent(finalGame.gameId)}`, { method: "POST" });
       } catch(err) {
         console.log("Error ending game:", err);
       }

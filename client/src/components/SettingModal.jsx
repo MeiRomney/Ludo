@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react';
 import toast, { Toaster } from 'react-hot-toast';
 
+const API_BASE = "http://localhost:8080/";
+
 const Setting = () => {
 
   const navigate = useNavigate();
@@ -32,7 +34,7 @@ const Setting = () => {
       try {
         setLoading(true);
         const email = user?.primaryEmailAddress?.emailAddress;
-        const res = await fetch(`http://localhost:8080/api/settings/by-email?email=${email}`);
+        const res = await fetch(`${API_BASE}api/settings/by-email?email=${email}`);
 
         if(!res.ok) throw new Error("Failed to fetch player settings");
 
@@ -73,7 +75,7 @@ const Setting = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:8080/api/settings/save", {
+      const res = await fetch(`${API_BASE}api/settings/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
