@@ -7,3 +7,5 @@ target/
 .idea/
 *.iml
 *.iws
+
+.env
