@@ -39,6 +39,14 @@ const GamePlay = () => {
         stomp.subscribe(`/topic/game/${gameId}`, (msg) => {
           try {
             const updated = JSON.parse(msg.body);
+
+            if(!updated) {
+              localStorage.removeItem("FinalGame");
+              toast("Game ended", { icon: "🛑" });
+              navigate("/");
+              return;
+            }
+
             setGame(updated);
           } catch (err) {
             console.error("WS parse error", err);
@@ -188,6 +196,18 @@ const GamePlay = () => {
     }
   };
 
+  const handleExitGame = async () => {
+    if(!gameId) return navigate("/");
+
+    try {
+      await fetch(`${API_BASE}/end?gameId=${gameId}`, { method: "POST" });
+    } catch(err) {
+      console.log("Failed to end game", err)
+    }
+
+    navigate("/");
+  };
+
   // ---------------------------
   // UI Rendering
   // ---------------------------
@@ -204,11 +224,11 @@ const GamePlay = () => {
           <span className="text-gray-800">Ludo Game</span>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/')} className="px-4 h-10 bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <Home size={18}/> Menu </button>
+          <button onClick={handleExitGame} className="px-4 h-10 bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <Home size={18}/> Menu </button>
           <button onClick={togglePause} className="px-4 h-10 bg-amber-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <Pause size={18}/> {paused ? "Resume" : "Pause"}
           </button>
-          <button onClick={() => navigate('/')} className="px-4 h-10 bg-red-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <X size={18}/> Exit </button>
+          <button onClick={handleExitGame} className="px-4 h-10 bg-red-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <X size={18}/> Exit </button>
         </div>
       </div>
 

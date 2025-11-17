@@ -65,7 +65,12 @@ public class GameController {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
+    }
 
+    @PostMapping("/end")
+    public ResponseEntity<Void> endGame(@RequestParam String gameId) {
+        gameService.endGame(gameId);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/roll")

@@ -145,6 +145,22 @@ public class GameService {
         }
     }
 
+    public synchronized void endGame(String gameId) {
+        Game game = activeGames.remove(gameId);
+        if(game != null) {
+            for(Player p : game.getPlayers()) {
+                playerToGame.remove(p.getPlayerId());
+            }
+
+            try {
+                messagingTemplate.convertAndSend("/topic/game/" + gameId, (Object) null);
+                System.out.println("🛑 Game ended and removed: " + gameId);
+            } catch (Exception e) {
+                System.out.println("⚠️ Failed to broadcast endGame for " + gameId + ": " + e.getMessage());
+            }
+        }
+    }
+
     /**
      * rolls the dice for the current player and moves to next turn
      *
