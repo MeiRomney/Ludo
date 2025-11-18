@@ -5,7 +5,7 @@ import GamePlay from './pages/GamePlay'
 import Results from './pages/Results'
 import HowToPlayModal from './components/HowToPlayModal'
 import SettingModal from './components/SettingModal'
-import GamePlayModal from './components/GameplayModal'
+import GamePlayModal from './components/GamePlayModal'
 
 const App = () => {
   return (
