@@ -2,54 +2,63 @@ package com.ludo.server.integration;
 
 import com.ludo.server.model.Game;
 import com.ludo.server.model.Player;
+import com.ludo.server.model.PlayerSetting;
+import com.ludo.server.repository.PlayerSettingRepository;
 import com.ludo.server.service.GameService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.Mockito;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Integration test for GameService and its interaction with Game, Player, and Token.
- */
 @SpringBootTest
-public class GameServiceIntegrationTest {
+class GameServiceIntegrationTest {
 
-    @Autowired
     private GameService gameService;
+    private PlayerSettingRepository playerSettingRepository;
+    private SimpMessagingTemplate messagingTemplate;
+
+    @BeforeEach
+    void setup() {
+        playerSettingRepository = Mockito.mock(PlayerSettingRepository.class);
+        messagingTemplate = Mockito.mock(SimpMessagingTemplate.class);
+
+        PlayerSetting setting = new PlayerSetting();
+        setting.setEmail("tester@example.com");
+        setting.setName("IntegrationTester");
+        setting.setColor("red");
+        setting.setGameType("fourPlayers");
+
+        Mockito.when(playerSettingRepository.findByEmail("tester@example.com"))
+                .thenReturn(Optional.of(setting));
+
+        gameService = new GameService(playerSettingRepository, messagingTemplate);
+    }
 
     @Test
-    void testStartNewGameAndRollDice() {
-        // Start a new game
-        Game game = gameService.startNewGame("Tester");
-        assertNotNull(game, "Game should be initialized");
-        assertEquals(4, game.getPlayers().size(), "There should be 4 players in the game");
+    void testStartGameAndRollDice_HumanOnly() {
+        // Create a game manually without bots
+        Game game = gameService.createMultiplayerGame("tester@example.com");
+        game.startGame();  // mark as started
 
-        // Verify current player
-        Player currentPlayer = game.getPlayers().get(game.getCurrentTurn());
-        assertNotNull(currentPlayer, "There should be a current player");
+        assertNotNull(game);
+        assertEquals(1, game.getPlayers().size());  // only human player
 
-        // Roll dice for current player
-        int roll = gameService.rollDice(currentPlayer.getPlayerId());
-        assertTrue(roll >= 1 && roll <= 6, "Dice roll should be between 1 and 6");
+        Player current = game.getPlayers().get(game.getCurrentTurn());
+        int roll = gameService.rollDice(current.getPlayerId());
+        assertTrue(roll >= 1 && roll <= 6);
 
-        // Check if game state updated properly
-        assertTrue(gameService.getCurrentGame().getPlayers().contains(currentPlayer),
-                "Current player should still be in the game");
-
-        // Move a token if possible
-        var movableTokens = currentPlayer.getTokens().stream()
-                .filter(t -> t.canMove(roll))
-                .toList();
-
+        var movableTokens = current.getTokens().stream().filter(t -> t.canMove(roll)).toList();
         if (!movableTokens.isEmpty()) {
             var token = movableTokens.get(0);
-            int previousPosition = token.getPosition();
-
-            gameService.moveToken(currentPlayer.getPlayerId(), token.getTokenId(), roll);
-
-            assertNotEquals(previousPosition, token.getPosition(),
-                    "Token position should change after move");
+            int prevPos = token.getPosition();
+            gameService.moveToken(current.getPlayerId(), token.getTokenId(), roll);
+            assertNotEquals(prevPos, token.getPosition());
         }
     }
+
 }
