@@ -1,14 +1,26 @@
-# Use lightweight Java image
-FROM eclipse-temurin:17-jdk-jammy
+# Stage 1: Build the app with Maven
+FROM maven:3.9.2-eclipse-temurin-17 AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy the JAR file built by Maven
-COPY target/*.jar app.jar
+# Copy Maven configuration and source code
+COPY pom.xml .
+COPY src ./src
 
-# Expose port your app uses
+# Build the app and skip tests
+RUN mvn clean package -DskipTests
+
+# Stage 2: Run the app
+FROM eclipse-temurin:17-jdk-jammy
+
+WORKDIR /app
+
+# Copy the JAR from the builder stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Expose the port Spring Boot uses
 EXPOSE 8080
 
-# Start Spring Boot
+# Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
