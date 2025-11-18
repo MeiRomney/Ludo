@@ -10,7 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("api/game")
-@CrossOrigin(origins = "https://ludo-ray-git-main-mei-romneys-projects.vercel.app/")
+@CrossOrigin(origins = "https://ludo-ray.vercel.app/")
 public class GameController {
     private final GameService gameService;
 
