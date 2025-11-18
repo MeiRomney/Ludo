@@ -4,7 +4,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 
-const API_BASE = "http://localhost:8080/";
+// const API_BASE = "http://localhost:8080/";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 const OnlineLobbyModal = ({ onClose }) => {
   const { user } = useUser();
