@@ -60,5 +60,19 @@ class GameServiceIntegrationTest {
             assertNotEquals(prevPos, token.getPosition());
         }
     }
+    @Test
+    void simplePracticeTest() {
+        assertEquals(10, 10, "This is a basic test for practice.");
+    }
+
+    @Test
+    void cannotRollDiceBeforeGameStarts() {
+        Exception exception = assertThrows(Exception.class, () -> {
+            gameService.rollDice("nonexistentPlayerId");
+        });
+        assertNotNull(exception, "Exception should be thrown if game not started or player is invalid.");
+    }
+
+
 
 }
