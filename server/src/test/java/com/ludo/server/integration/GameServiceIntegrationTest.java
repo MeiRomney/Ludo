@@ -52,4 +52,10 @@ public class GameServiceIntegrationTest {
                     "Token position should change after move");
         }
     }
+    @Test
+    void simplePracticeTest() {
+        assertEquals(10, 10, "This is a basic test for practice.");
+    }
+
+
 }
