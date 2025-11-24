@@ -8,7 +8,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 
-const API_BASE = "http://localhost:8080/api/game";
+// const API_BASE = "http://localhost:8080/";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 const GamePlay = () => {
 
@@ -16,12 +17,14 @@ const GamePlay = () => {
   const { state } = useLocation();
 
   const gameId = state?.gameId;
-  const [playerId, setPlayerId] = useState(state?.playerId ?? localStorage.getItem("playerId") ?? null);
-
+  const [playerId] = useState(state?.playerId);
+  // const [playerId, setPlayerId] = useState(state?.playerId ?? localStorage.getItem("playerId") ?? null);
   const [game, setGame] = useState(null);
   const [pendingRoll, setPendingRoll] = useState(null);
   const [roller, setRoller] = useState(null);
   const [paused, setPaused] = useState(false);
+
+  const vsComputer = state?.mode === "computer";
 
   const stompClient = useRef(null);
 
@@ -32,13 +35,21 @@ const GamePlay = () => {
     if (!gameId) return;
 
     const stomp = new Client({
-      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+      webSocketFactory: () => new SockJS(`${API_BASE}ws`),
       reconnectDelay: 5000,
       debug: () => {},
       onConnect: () => {
         stomp.subscribe(`/topic/game/${gameId}`, (msg) => {
           try {
             const updated = JSON.parse(msg.body);
+
+            if(!updated || updated.ended) {
+              localStorage.removeItem("FinalGame");
+              toast("Game ended", { icon: "🛑" });
+              navigate("/");
+              return;
+            }
+
             setGame(updated);
           } catch (err) {
             console.error("WS parse error", err);
@@ -62,11 +73,11 @@ const GamePlay = () => {
 
     const checkGameOver = async () => {
       try {
-        const res = await fetch(`${API_BASE}/state?gameId=${gameId}`);
+        const res = await fetch(`${API_BASE}api/game/state?gameId=${gameId}`);
         if(!res.ok) return;
 
         const gameState = await res.json();
-        if(!gameState || !gameState.players) return;
+        if(!gameState || !gameState.players || !gameState.started) return;
 
         // Count how many players have finished all four tokens
         const finishedPlayers = gameState.players.filter(
@@ -93,7 +104,7 @@ const GamePlay = () => {
   // ---------------------------
   const fetchGameState = async () => {
     try {
-      const res = await fetch(`${API_BASE}/state?gameId=${encodeURIComponent(gameId)}`);
+      const res = await fetch(`${API_BASE}api/game/state?gameId=${encodeURIComponent(gameId)}`);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -117,7 +128,7 @@ const GamePlay = () => {
   const togglePause = async () => {
     try {
       const action = paused ? "resume" : "pause";
-      const res = await fetch(`${API_BASE}/${action}?gameId=${gameId}`, { method: "POST" });
+      const res = await fetch(`${API_BASE}api/game/${action}?gameId=${gameId}`, { method: "POST" });
 
       if (res.ok) {
         setPaused(prev => !prev);
@@ -132,7 +143,7 @@ const GamePlay = () => {
   const isMyTurn = () => {
     if (!game || !playerId) return false;
     const current = game.players?.[game.currentTurn];
-    return current?.playerId === playerId;
+    return String(current?.playerId) === String(playerId);
   };
 
   // ---------------------------
@@ -163,7 +174,7 @@ const GamePlay = () => {
 
     try {
       const res = await fetch(
-        `${API_BASE}/move?playerId=${player.playerId}&tokenId=${tokenId}&steps=${pendingRoll}`,
+        `${API_BASE}api/game/move?playerId=${player.playerId}&tokenId=${tokenId}&steps=${pendingRoll}`,
         { method: "POST" }
       );
 
@@ -188,6 +199,18 @@ const GamePlay = () => {
     }
   };
 
+  const handleExitGame = async () => {
+    if(!gameId) return navigate("/");
+
+    try {
+      await fetch(`${API_BASE}api/game/end?gameId=${gameId}`, { method: "POST" });
+    } catch(err) {
+      console.log("Failed to end game", err)
+    }
+
+    navigate("/");
+  };
+
   // ---------------------------
   // UI Rendering
   // ---------------------------
@@ -204,11 +227,11 @@ const GamePlay = () => {
           <span className="text-gray-800">Ludo Game</span>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/')} className="px-4 h-10 bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <Home size={18}/> Menu </button>
+          <button onClick={handleExitGame} className="px-4 h-10 bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <Home size={18}/> Menu </button>
           <button onClick={togglePause} className="px-4 h-10 bg-amber-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
             <Pause size={18}/> {paused ? "Resume" : "Pause"}
           </button>
-          <button onClick={() => navigate('/')} className="px-4 h-10 bg-red-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <X size={18}/> Exit </button>
+          <button onClick={handleExitGame} className="px-4 h-10 bg-red-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <X size={18}/> Exit </button>
         </div>
       </div>
 
@@ -263,7 +286,7 @@ const GamePlay = () => {
                 player={player}
                 diceRoll={game?.lastDiceRolls?.[player.playerId]}
                 onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
-                disabled={!isActive || player.isBot || !isMyTurn() || game?.diceRolledThisTurn}
+                disabled={!isActive || player.isBot || (vsComputer && !isMyTurn()) || game?.diceRolledThisTurn}
               />
 
               {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
