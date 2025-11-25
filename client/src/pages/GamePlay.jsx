@@ -243,7 +243,7 @@ const GamePlay = () => {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="relative flex-1 flex justify-center items-center p-6 max-sm:flex-col max-sm:p-2 max-sm:gap-4">
+      <div className="relative flex-1 flex justify-center items-center p-6 max-sm:flex-col max-sm:p-2 max-sm:gap-2 max-sm:items-center max-sm:justify-start">
 
         {paused && (
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-2xl font-bold max-sm:text-xl">
@@ -252,7 +252,7 @@ const GamePlay = () => {
         )}
 
         {/* BOARD */}
-        <div className="w-[500px] h-[500px] flex items-center justify-center max-sm:w-full max-sm:max-w-[360px] max-sm:h-auto max-sm:aspect-square">
+        <div className="w-[500px] h-[500px] flex items-center justify-center max-sm:w-[90vw] max-sm:h-[90vw] max-sm:max-w-[90vw] max-sm:max-h-[90vw]">
           {game?.players?.length ? (
             <GameBoard
               players={game.players}
@@ -271,39 +271,42 @@ const GamePlay = () => {
         </div>
 
         {/* PLAYER HUDS */}
-        {["red", "blue", "yellow", "green"].map(color => {
-          const player = game?.players?.find(p => p.color === color);
-          if (!player) return null;
+        <div className='max-sm:w-full max-sm:flex max-sm:flex-col max-sm:gap-2 max-sm:mt-2'>
+          {["red", "blue", "yellow", "green"].map(color => {
+            const player = game?.players?.find(p => p.color === color);
+            if (!player) return null;
 
-          const isActive = game.currentTurn === game.players.findIndex(p => p.color === color);
+            const isActive = game.currentTurn === game.players.findIndex(p => p.color === color);
 
-          const positions = {
-            red: "top-5 left-5 items-start",
-            blue: "top-5 right-5 items-end",
-            yellow: "bottom-5 right-5 items-end",
-            green: "bottom-5 left-5 items-start"
-          };
+            const positions = {
+              red: "top-5 left-5 items-start",
+              blue: "top-5 right-5 items-end",
+              yellow: "bottom-5 right-5 items-end",
+              green: "bottom-5 left-5 items-start"
+            };
 
-          return (
-            <div key={player.playerId} className={`absolute ${positions[color]} flex flex-col gap-2 max-sm:static max-sm:w-full max-sm:flex-row max-sm:justify-between`}>
-              <PlayerCard color={player.color} name={player.name} pieces={player.tokens} active={isActive} />
+            return (
+              <div key={player.playerId} className={`absolute ${positions[color]} flex flex-col gap-2 max-sm:static max-sm:w-full max-sm:flex max-sm:flex-row max-sm:items-center max-sm:gap-2`}>
+                <PlayerCard color={player.color} name={player.name} pieces={player.tokens} active={isActive} />
 
-              <Dice
-                name={player.name}
-                player={player}
-                diceRoll={game?.lastDiceRolls?.[player.playerId]}
-                onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
-                disabled={!isActive || player.isBot || (vsComputer && !isMyTurn()) || game?.diceRolledThisTurn}
-              />
+                <Dice
+                  name={player.name}
+                  player={player}
+                  diceRoll={game?.lastDiceRolls?.[player.playerId]}
+                  onDiceRoll={player.isBot ? undefined : (dice) => handleDiceRoll(player, dice)}
+                  disabled={!isActive || player.isBot || (vsComputer && !isMyTurn()) || game?.diceRolledThisTurn}
+                />
 
-              {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
-                <div className="text-sm text-gray-600 max-sm:text-xs">
-                  Rolled: <b>{pendingRoll}</b> — choose a token
-                </div>
-              )}
-            </div>
-          );
-        })}
+                {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
+                  <div className="text-sm text-gray-600 max-sm:text-xs">
+                    Rolled: <b>{pendingRoll}</b> — choose a token
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        
 
       </div>
 

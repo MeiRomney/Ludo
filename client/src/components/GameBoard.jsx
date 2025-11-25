@@ -428,7 +428,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             >
                 <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-4 max-sm:h-4'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
@@ -439,7 +439,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             >
                 <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-4 max-sm:h-4'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
@@ -450,7 +450,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             >
                 <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-4 max-sm:h-4'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
@@ -461,7 +461,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
             >
                 <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-4 max-sm:h-4'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
