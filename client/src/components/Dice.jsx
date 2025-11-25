@@ -117,9 +117,9 @@ const Dice = ({ name, player, diceRoll, onDiceRoll, disabled }) => {
   }; 
 
   return (
-    <div className="mt-auto bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2">
-        <div className="text-gray-600 mb-2">{name}'s Dice</div>
-        <div className={`w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md grid grid-cols-3 grid-rows-3 gap-1 p-2 cursor-pointer ${
+    <div className="mt-auto bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center gap-2 max-sm:p-2 max-sm:gap-1">
+        <div className="text-gray-600 mb-2 max-sm:text-sm">{name}'s Dice</div>
+        <div className={`w-20 h-20 bg-white border-4 border-gray-300 rounded-xl shadow-md grid grid-cols-3 grid-rows-3 gap-1 p-2 cursor-pointer max-sm:w-16 max-sm:h-16 max-sm:p-1 ${
             rolling ? 'animate-diceRoll' : 'hover:scale-105 transition-transform'
           }`}
           onClick={!rolling && !player.isBot && !disabled ? rollDice : undefined}

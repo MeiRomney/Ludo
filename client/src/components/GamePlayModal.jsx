@@ -53,19 +53,19 @@ const GamePlayModal = () => {
   };
 
   return (
-    <div className='absolute inset-0 z-50 flex w-1/3 h-3/4 justify-center text-center items-center m-auto rounded-xl bg-gray-300 bg-opacity-50'>
+    <div className='absolute inset-0 z-50 flex w-1/3 h-3/4 justify-center text-center items-center m-auto rounded-xl bg-gray-300 bg-opacity-50 max-sm:w-full max-sm:h-full max-sm:p-4 max-sm:rounded-none'>
       <Toaster position='top-center'/>
-      <div className='relative p-10 rounded-xl w-[90%] h-[90%] flex flex-col bg-white shadow-lg'>
-        <h2 className='text-2xl font-semibold mb-4'>Choose Game Mode</h2>
-        <button onClick={()=> navigate('/')} className='absolute top-4 right-4 w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer'><X/></button>
-        <div className='flex flex-col p-10 gap-10 justify-center items-center text-center'>
-            <button onClick={() => setShowOnlineLobby(true)} className='w-full py-10 rounded-xl text-white font-bold bg-gradient-to-r from-pink-500 to-purple-500 hover:scale-95 cursor-pointer'>
+      <div className='relative p-10 rounded-xl w-[90%] h-[90%] flex flex-col bg-white shadow-lg max-sm:p-5 max-sm:w-[95%] max-sm:h-[95%]'>
+        <h2 className='text-2xl font-semibold mb-4 max-sm:text-xl'>Choose Game Mode</h2>
+        <button onClick={()=> navigate('/')} className='absolute top-4 right-4 w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer max-sm:w-5 max-sm:h-5'><X/></button>
+        <div className='flex flex-col p-10 gap-10 justify-center items-center text-center max-sm:p-4 max-sm:gap-6'>
+            <button onClick={() => setShowOnlineLobby(true)} className='w-full py-10 rounded-xl text-white font-bold bg-gradient-to-r from-pink-500 to-purple-500 hover:scale-95 cursor-pointer max-sm:py-6'>
                 Online
             </button>
             {showOnlineLobby && (
               <OnlineLobbyModal onClose={() => setShowOnlineLobby(false)}/>
             )}
-            <button onClick={ startComputerGame }  className='w-full py-10 rounded-xl text-white font-bold bg-gradient-to-r from-pink-500 to-purple-500 hover:scale-95 cursor-pointer'>
+            <button onClick={ startComputerGame }  className='w-full py-10 rounded-xl text-white font-bold bg-gradient-to-r from-pink-500 to-purple-500 hover:scale-95 cursor-pointer max-sm:py-6'>
                 VS Computer
             </button>
         </div>

@@ -215,37 +215,44 @@ const GamePlay = () => {
   // UI Rendering
   // ---------------------------
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+    <div className="w-screen h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col overflow-x-hidden">
       <Toaster position='top-center' />
 
       {/* NAV BAR */}
-      <div className="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <img src="/Ludo.png" alt="Ludo" />
+      <div className="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm max-sm:px-3 max-sm:h-14">
+        <div className="flex items-center gap-3 max-sm:gap-2">
+          <div className="w-10 h-10 max-sm:w-8 max-sm:h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <img src="/Ludo.png" alt="Ludo" className='max-sm:w-6' />
           </div>
-          <span className="text-gray-800">Ludo Game</span>
+          <span className="text-gray-800 max-sm:text-sm">Ludo Game</span>
         </div>
-        <div className="flex gap-3">
-          <button onClick={handleExitGame} className="px-4 h-10 bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <Home size={18}/> Menu </button>
-          <button onClick={togglePause} className="px-4 h-10 bg-amber-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
-            <Pause size={18}/> {paused ? "Resume" : "Pause"}
+        <div className="flex gap-3 max-sm:gap-1">
+          <button onClick={handleExitGame} className="px-4 h-10 max-sm:px-2 max-sm:h-9 bg-blue-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> 
+            <Home size={18} className='max-sm:w-4'/> 
+            <span className='max-sm:hidden'>Menu</span> 
           </button>
-          <button onClick={handleExitGame} className="px-4 h-10 bg-red-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> <X size={18}/> Exit </button>
+          <button onClick={togglePause} className="px-4 h-10 max-sm:px-2 max-sm:h-9 bg-amber-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer">
+            <Pause size={18} className='max-sm:w-4'/> 
+            <span className='max-sm:hidden'>{paused ? "Resume" : "Pause"}</span> 
+          </button>
+          <button onClick={handleExitGame} className="px-4 h-10 max-sm:px-2 max-sm:h-9 bg-red-500 text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"> 
+            <X size={18} className='max-sm:w-4'/> 
+            <span className='max-sm:hidden'>Exit</span> 
+          </button>
         </div>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="relative flex-1 flex justify-center items-center p-6">
+      <div className="relative flex-1 flex justify-center items-center p-6 max-sm:flex-col max-sm:p-2 max-sm:gap-4">
 
         {paused && (
-          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-2xl font-bold">
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-2xl font-bold max-sm:text-xl">
             Game Paused
           </div>
         )}
 
         {/* BOARD */}
-        <div className="w-[500px] h-[500px] flex items-center justify-center">
+        <div className="w-[500px] h-[500px] flex items-center justify-center max-sm:w-full max-sm:max-w-[360px] max-sm:h-auto max-sm:aspect-square">
           {game?.players?.length ? (
             <GameBoard
               players={game.players}
@@ -278,7 +285,7 @@ const GamePlay = () => {
           };
 
           return (
-            <div key={player.playerId} className={`absolute ${positions[color]} flex flex-col gap-2`}>
+            <div key={player.playerId} className={`absolute ${positions[color]} flex flex-col gap-2 max-sm:static max-sm:w-full max-sm:flex-row max-sm:justify-between`}>
               <PlayerCard color={player.color} name={player.name} pieces={player.tokens} active={isActive} />
 
               <Dice
@@ -290,7 +297,7 @@ const GamePlay = () => {
               />
 
               {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 max-sm:text-xs">
                   Rolled: <b>{pendingRoll}</b> — choose a token
                 </div>
               )}
