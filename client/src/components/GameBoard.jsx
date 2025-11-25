@@ -390,7 +390,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
 
   return (
     <div className="flex-1 flex items-center justify-center">
-        <div className="w-[500px] h-[500px] bg-white rounded-2xl shadow-2xl grid grid-cols-15 grid-rows-15 relative overflow-hidden max-sm:w-[95%] max-sm:h-[95%] max-sm:rounded-xl">
+        <div className="w-[500px] h-[500px] bg-white rounded-2xl shadow-2xl grid grid-cols-15 grid-rows-15 relative overflow-hidden max-sm:w-[90vw] max-sm:h-[90vw] max-sm:max-w-[90vw] max-sm:max-h-[90vw] max-sm:rounded-xl">
 
             {[...Array(225)].map((_, i) => {
                 const row = Math.floor(i / 15);

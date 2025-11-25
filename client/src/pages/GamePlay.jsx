@@ -298,7 +298,7 @@ const GamePlay = () => {
                 />
 
                 {isActive && !player.isBot && pendingRoll && roller?.playerId === player.playerId && (
-                  <div className="text-sm text-gray-600 max-sm:text-xs">
+                  <div className="text-sm text-gray-600 max-sm:hidden">
                     Rolled: <b>{pendingRoll}</b> — choose a token
                   </div>
                 )}
