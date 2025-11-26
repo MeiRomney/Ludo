@@ -162,6 +162,6 @@ MIT License
 
 ## 🙌 Acknowledgments
 
-Special thanks to Yaya Hamid Adam and Anas Rajput for their valuable contributions to this project.
+Special thanks to Yaya Hamid Adam and Anas Mehmood Tariq for their valuable contributions to this project.
 
 This project was created as a class project demonstrating full-stack development, scalable backend design, UI/UX principles, and comprehensive testing.
