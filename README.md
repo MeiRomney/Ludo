@@ -6,6 +6,7 @@ Ludo Ray is a full‑stack multiplayer Ludo game built as a class project. It su
 This project demonstrates complete end‑to‑end system development, including UI/UX design, backend APIs, real‑time communication, authentication, testing, and cloud deployment.
 
 ---
+View live site https://ludo-ray.vercel.app/
 
 ## 🚀 Tech Stack
 
