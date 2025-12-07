@@ -138,6 +138,7 @@ const Setting = () => {
                 <button
                   key={type.name}
                   onClick={() => setSelectedType(type.name)}
+                  aria-label={`Select ${type.label} game mode`}
                   className={`w-full py-3 rounded-xl font-semibold shadow-md transition-all duration-200 cursor-pointer
                     ${
                     selectedType === type.name
