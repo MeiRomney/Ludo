@@ -73,6 +73,4 @@ class GameServiceIntegrationTest {
         assertNotNull(exception, "Exception should be thrown if game not started or player is invalid.");
     }
 
-
-
 }
