@@ -50,6 +50,27 @@ This project includes thorough testing across multiple layers:
 
 ---
 
+### 🧪 End-to-End UI tests
+
+UI flows are covered with Playwright tests located in the `tests` folder.  
+These tests verify homepage navigation, gameplay start, dice interaction, and Settings behavior.
+
+- ▶️ To run **all** E2E tests locally:
+
+npx playwright test
+
+- 🎯 To run a **single** test file (for example, the Settings page):
+
+npx playwright test tests/settings.spec.ts --headed
+undefined
+
+git add README.md
+git commit -m "docs: polish Playwright E2E tests section"
+git push origin Anas-dev
+
+---
+
+
 ## 🗂️ Project Structure
 
 ```
