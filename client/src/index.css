@@ -24,4 +24,25 @@
 
 .animate-diceRoll {
   animation: diceRoll 0.6s ease-in-out;
+
 }
+
+@media (max-width: 600px) {
+    body {
+      font-size: 16px;
+      margin: 0;
+      padding: 6px;
+    }
+    #root,
+    .container,
+    .ludo-board {
+      width: 100vw;
+      padding: 0;
+      min-width: unset;
+    }
+    button, input {
+      width: 100%;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+  }
