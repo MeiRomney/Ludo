@@ -8,7 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/settings")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://ludo-ray.vercel.app/")
 public class PlayerSettingController {
 
     private final PlayerSettingService playerSettingService;

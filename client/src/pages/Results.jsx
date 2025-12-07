@@ -2,6 +2,9 @@ import { Home, RefreshCw, Trophy } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 
+// const API_BASE = "http://localhost:8080/";
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 const Results = () => {
 
   const navigate = useNavigate();
@@ -12,7 +15,7 @@ const Results = () => {
     const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
     if(!finalGame?.gameId) return;
 
-    fetch(`http://localhost:8080/api/game/results?gameId=${encodeURIComponent(finalGame.gameId)}`)
+    fetch(`${API_BASE}api/game/results?gameId=${encodeURIComponent(finalGame.gameId)}`)
       .then(res => res.json())
       .then(data => {
         console.log("Results fetched: ", data);
@@ -39,6 +42,32 @@ const Results = () => {
       })
       .catch((err) => console.log("Error fetching results:", err));
   }, []);
+
+  const handleReturnHome = async () => {
+    const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
+    if(finalGame?.gameId) {
+      try {
+        await fetch(`${API_BASE}api/game/end?gameId=${encodeURIComponent(finalGame.gameId)}`, { method: "POST" });
+      } catch(err) {
+        console.log("Error ending game:", err);
+      }
+    }
+    localStorage.removeItem("FinalGame");
+    navigate("/");
+  }
+
+  const handlePlayAgain = async () => {
+    const finalGame = JSON.parse(localStorage.getItem("FinalGame"));
+    if(finalGame?.gameId) {
+      try {
+        await fetch(`${API_BASE}api/game/end?gameId=${encodeURIComponent(finalGame.gameId)}`, { method: "POST" });
+      } catch(err) {
+        console.log("Error ending game:", err);
+      }
+    }
+    localStorage.removeItem("FinalGame");
+    navigate("/gameplay-modal");
+  }
 
   return (
     <div className='w-full h-full bg-yellow-50 absolute flex flex-col justify-center items-center pt-15'>
@@ -106,11 +135,11 @@ const Results = () => {
 
       {/* Action buttons */}
       <div className="flex gap-4 w-full max-w-md mt-5">
-        <button onClick={()=> navigate('/gameplay')} className="flex-1 h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer">
+        <button onClick={handlePlayAgain} className="flex-1 h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer">
           <RefreshCw className="w-5 h-5" />
           Play Again
         </button>
-        <button onClick={()=> navigate('/')} className="flex-1 h-14 bg-white text-purple-600 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer">
+        <button onClick={handleReturnHome} className="flex-1 h-14 bg-white text-purple-600 rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-105 flex items-center justify-center gap-2 cursor-pointer">
           <Home className="w-5 h-5" />
           Home
         </button>
