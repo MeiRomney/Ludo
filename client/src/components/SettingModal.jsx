@@ -99,22 +99,37 @@ const Setting = () => {
       <Toaster position='top-center'/>
       <div className='relative p-10 rounded-xl w-[90%] h-[90%] flex flex-col bg-white shadow-lg'>
         <h2 className='text-3xl font-bold text-gray-800 mb-4 text-center'>Settings</h2>
-        <button onClick={()=> navigate('/')} className='absolute top-4 right-4 w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer'><X/></button>
+
+        {/* added aria-label only */}
+        <button
+          aria-label="Close settings"
+          onClick={()=> navigate('/')}
+          className='absolute top-4 right-4 w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer'
+        >
+          <X/>
+        </button>
+
         {loading ? (
           <div className='flex flex-1 justify-center items-center text-gray-600'>Loading settings...</div>
         ) : (
-            <div className='flex flex-col items-center mt-4 space-y-6'>
+          <div className='flex flex-col items-center mt-4 space-y-6'>
             {/* Name */}
             <div className='flex flex-col gap-0 my-0 mb-2 w-full'>
               <h3 className='text-lg font-medium text-gray-700'>Enter Your Name</h3>
-              <input 
-                type="text" 
-                placeholder={`${selectedColor}`} 
+
+              {/* new helper text, rest unchanged */}
+              <p className='text-xs text-gray-500 mb-1'>
+                This name will be shown to other players in the game.
+              </p>
+
+              <input
+                type="text"
+                placeholder={`${selectedColor}`}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className='w-full border border-gray-500 rounded-xl p-2' />
             </div>
-            
+
 
             {/* Game Type */}
             <h3 className='text-lg font-medium text-gray-700 mb-2'>Select Game Type</h3>
@@ -140,16 +155,16 @@ const Setting = () => {
               <h3 className='text-lg font-medium text-gray-700 mb-2'>Select Color</h3>
               <div className='flex justify-center gap-5'>
                 {colors.map((color)=> (
-                  <button 
-                  key={color.name}
-                  onClick={()=> setSelectedColor(color.name)}
-                  className={`w-12 h-12 rounded-full border-4 transition-all duration-200 cursor-pointer ${color.value} ${color.hover}
-                  ${
-                  selectedColor === color.name
-                  ? 'scale-110 border-gray-800 shadow-lg'
-                  : 'border-transparent opacity-80 hover:opacity-100'
-                  }`}
-                  title={color.name}/>
+                  <button
+                    key={color.name}
+                    onClick={()=> setSelectedColor(color.name)}
+                    className={`w-12 h-12 rounded-full border-4 transition-all duration-200 cursor-pointer ${color.value} ${color.hover}
+                    ${
+                    selectedColor === color.name
+                    ? 'scale-110 border-gray-800 shadow-lg'
+                    : 'border-transparent opacity-80 hover:opacity-100'
+                    }`}
+                    title={color.name}/>
                 ))}
               </div>
               <p className='mt-3 text-sm text-gray-600'>
@@ -158,7 +173,7 @@ const Setting = () => {
             </div>
           </div>
         )}
-        
+
         {/* Apply button */}
         <button onClick={apply} className='absolute bottom-4 right-4 w-20 h-8 flex text-center justify-center items-center rounded-full bg-green-500 text-white hover:bg-green-700 hover:scale-105 cursor-pointer'>
           <Check/>
