@@ -59,36 +59,37 @@ public class GameService {
         }
 
         PlayerSetting humanSetting = getPlayerSetting(email);
-        Player player = createHuman(humanSetting.getName(), humanSetting.getColor());
-        List<String> allColors = List.of("red", "blue", "yellow", "green");
-        String chosenColor = humanSetting.getColor();
+        String requestedColor = humanSetting.getColor();
 
-        // Prevent duplicate names/colors in the same room
-        String finalChosenColor = chosenColor;
-        if(game.getPlayers().stream().anyMatch(p -> p.getColor().equalsIgnoreCase(finalChosenColor))) {
-            // if color already exists, force change color
-            chosenColor = allColors.stream()
-                    .filter(c -> game.getPlayers().stream().noneMatch(p -> p.getColor().equals(c)))
+        List<String> allColors = List.of("red", "blue", "yellow", "green");
+
+        Set<String> usedColors = game.getPlayers()
+                .stream()
+                .map(Player::getColor)
+                .collect(Collectors.toSet());
+
+        String assignedColor = requestedColor;
+        if(usedColors.contains(requestedColor)) {
+            assignedColor = allColors.stream()
+                    .filter(c -> !usedColors.contains(c))
                     .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("No color left"));
+                    .orElseThrow(() -> new IllegalStateException("No colors available"));
         }
-        player.setColor(chosenColor);
-        player.setStartOffset(getStartOffset(chosenColor));
+
+        Player player = createHuman(humanSetting.getName(), assignedColor);
+        player.setStartOffset(getStartOffset(assignedColor));
 
         game.getPlayers().add(player);
         playerToGame.put(player.getPlayerId(), gameId);
 
-        // If the room has enough players to start (2 or more), start the game
-        // We may choose to wait until explicit 'Start' from host, here we auto-start at 2+ players
-        if(game.getPlayers().size() >= 2 && !game.isStarted()) {
-            PlayerSetting hostSetting = getPlayerSetting(email);
-            int totalPlayers = hostSetting.getGameType().equalsIgnoreCase("twoPlayers") ? 2 : 4;
-            startGameInternal(game, totalPlayers);
-        } else {
-            broadcastGameState(game);
-        }
-
+        broadcastGameState(game);
         return game;
+    }
+
+    public List<Game> getWaitingGames() {
+        return activeGames.values().stream()
+                .filter(g -> !g.isStarted() && g.getPlayers().size() < 4)
+                .toList();
     }
 
     private PlayerSetting getPlayerSetting(String email) {
@@ -145,6 +146,23 @@ public class GameService {
         }
     }
 
+    public synchronized void endGame(String gameId) {
+        Game game = activeGames.remove(gameId);
+        if(game != null) {
+            for(Player p : game.getPlayers()) {
+                playerToGame.remove(p.getPlayerId());
+            }
+
+            try {
+                messagingTemplate.convertAndSend("/topic/game/" + gameId, Map.of("ended", true));
+                System.out.println("🛑 Game ended and removed: " + gameId);
+            } catch (Exception e) {
+                messagingTemplate.convertAndSend("/topic/game/" + gameId, Map.of("ended", true));
+                System.out.println("⚠️ Failed to broadcast endGame for " + gameId + ": " + e.getMessage());
+            }
+        }
+    }
+
     /**
      * rolls the dice for the current player and moves to next turn
      *
@@ -169,6 +187,11 @@ public class GameService {
         // Ensure they haven't already rolled this turn
         if (game.isDiceRolledThisTurn()) {
             throw new IllegalStateException("⚠️ You've already rolled the dice this turn!");
+        }
+
+        if(!game.isStarted()) {
+            game.setStarted(true);
+            System.out.println("🎮 Game started by host rolling dice: " + game.getGameId());
         }
 
         int value = game.rollDiceForPlayer(current);

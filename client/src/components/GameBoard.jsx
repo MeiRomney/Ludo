@@ -390,7 +390,7 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
 
   return (
     <div className="flex-1 flex items-center justify-center">
-        <div className="w-[500px] h-[500px] bg-white rounded-2xl shadow-2xl grid grid-cols-15 grid-rows-15 relative overflow-hidden">
+        <div className="w-[500px] h-[500px] bg-white rounded-2xl shadow-2xl grid grid-cols-15 grid-rows-15 relative overflow-hidden max-sm:w-[90vw] max-sm:h-[90vw] max-sm:max-w-[90vw] max-sm:max-h-[90vw] max-sm:rounded-xl">
 
             {[...Array(225)].map((_, i) => {
                 const row = Math.floor(i / 15);
@@ -404,11 +404,11 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
                 return (
                     <div
                     key={i}
-                    className={`border border-gray-300 flex items-center justify-center relative ${bgColor}`}>
-                        {isStar && <span className='text-gray-300 text-sm z-0 absolute'><Star/></span>}
+                    className={`border border-gray-300 flex items-center justify-center relative ${bgColor} max-sm:border-[1px]`}>
+                        {isStar && <span className='text-gray-300 text-sm z-0 absolute max-sm:text-xs'><Star/></span>}
                         {arrow && (
                             <div
-                                className={`w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] ${arrow.rotation} z-0 absolute`}
+                                className={`w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] ${arrow.rotation} z-0 absolute max-sm:border-l-[4px] max-sm:border-r-[4-px] max-sm:border-b-[7px]`}
                                 style={{
                                     borderLeftColor: 'transparent',
                                     borderRightColor: 'transparent',
@@ -424,51 +424,51 @@ const GameBoard = ({ players, currentPlayer, onMove, pendingRoll }) => {
 
             {/* Red zone - Top left */}
             <div
-                className={`absolute top-0 left-0 w-[40%] h-[40%] ${redHome.color} ${redHome.border} border-4 rounded-tl-2xl flex items-center justify-center`}
+                className={`absolute top-0 left-0 w-[40%] h-[40%] ${redHome.color} ${redHome.border} border-4 rounded-tl-2xl flex items-center justify-center max-sm:w-[42%] max-sm:h-[42%]`}
             >
-                <div className='grid grid-cols-2 gap-3'>
+                <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
 
             {/* Blue zone - Top right */}
             <div
-                className={`absolute top-0 right-0 w-[40%] h-[40%] ${blueHome.color} ${blueHome.border} border-4 rounded-tr-2xl flex items-center justify-center`}
+                className={`absolute top-0 right-0 w-[40%] h-[40%] ${blueHome.color} ${blueHome.border} border-4 rounded-tr-2xl flex items-center justify-center max-sm:w-[42%] max-sm:w-[42%]`}
             >
-                <div className='grid grid-cols-2 gap-3'>
+                <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
 
             {/* Green zone - Bottom left */}
             <div
-                className={`absolute bottom-0 left-0 w-[40%] h-[40%] ${greenHome.color} ${greenHome.border} border-4 rounded-bl-2xl flex items-center justify-center`}
+                className={`absolute bottom-0 left-0 w-[40%] h-[40%] ${greenHome.color} ${greenHome.border} border-4 rounded-bl-2xl flex items-center justify-center max-sm:w-[42%] max-sm:w-[42%]`}
             >
-                <div className='grid grid-cols-2 gap-3'>
+                <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
             
             {/* Yellow zone - Bottom right */}
             <div
-                className={`absolute bottom-0 right-0 w-[40%] h-[40%] ${yellowHome.color} ${yellowHome.border} border-4 rounded-br-2xl flex items-center justify-center`}
+                className={`absolute bottom-0 right-0 w-[40%] h-[40%] ${yellowHome.color} ${yellowHome.border} border-4 rounded-br-2xl flex items-center justify-center max-sm:w-[42%] max-sm:w-[42%]`}
             >
-                <div className='grid grid-cols-2 gap-3'>
+                <div className='grid grid-cols-2 gap-3 max-sm:gap-2'>
                     {[...Array(4)].map((_, i)=> (
-                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white'></div>
+                        <div key={i} className='w-5 h-5 bg-white rounded-full shadow-md border-2 border-white max-sm:w-2 max-sm:h-2'></div>
                     ))}
                 </div>
             </div>
 
             {/* Center */}
-            <div className='absolute top-[40%] left-[40%] w-[20%] h-[20%] bg-white border border-gray-400 flex items-center justify-center'>
-                <div className='w-6 h-6 bg-gray-800 rounded-full'></div>
+            <div className='absolute top-[40%] left-[40%] w-[20%] h-[20%] bg-white border border-gray-400 flex items-center justify-center max-sm:top-[38%] max-sm:left-[38%] max-sm:w-[24%] max-sm:h-[24%]'>
+                <div className='w-6 h-6 bg-gray-800 rounded-full max-sm:w-5 max-sm:h-5'></div>
             </div>
         </div>
     </div>

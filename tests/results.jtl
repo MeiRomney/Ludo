@@ -1,0 +1,2 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1763986947675,708,HTTP Request,200,OK,Thread Group 1-1,text,true,,350,139,1,1,https://ludo-server-9mcn.onrender.com/healthz,701,0,456

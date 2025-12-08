@@ -10,7 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("api/game")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://ludo-ray.vercel.app/")
 public class GameController {
     private final GameService gameService;
 
@@ -65,7 +65,23 @@ public class GameController {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
+    }
 
+    @GetMapping("/waiting")
+    public ResponseEntity<?> getWaitingGames() {
+        List<Map<String, String>> waitingGames = gameService.getWaitingGames().stream()
+                .map(g -> Map.of(
+                        "gameId", g.getGameId(),
+                        "players", String.valueOf(g.getPlayers().size())
+                ))
+                .toList();
+        return ResponseEntity.ok(waitingGames);
+    }
+
+    @PostMapping("/end")
+    public ResponseEntity<Void> endGame(@RequestParam String gameId) {
+        gameService.endGame(gameId);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/roll")
